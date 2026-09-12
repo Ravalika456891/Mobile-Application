@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local environment
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# build output
+dist/
+web-build/

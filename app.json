@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "LoginApp",
+    "slug": "loginapp",
+    "version": "1.0.0",
+
+    "android": {
+      "package": "com.ravalika.loginapp"
+    }
+  }
+}
