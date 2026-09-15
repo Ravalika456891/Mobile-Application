@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import LoginScreen from "./LoginApp/signupfolder/LoginScreen";
 import SignUpScreen from "./LoginApp/signupfolder/SignUpScreen";
+import DashboardScreen from "./LoginApp/DashboardScreen";
 const Stack = createNativeStackNavigator();
 /*import * as SQLite from "expo-sqlite";
 const db = SQLite.openDatabaseSync("RavalikaApp.db");
@@ -44,6 +45,11 @@ export default function App() {
           name="SignUp"
           component={SignUpScreen}
         />
+        <Stack.Screen
+          name = "Dashboard"
+          component={DashboardScreen}
+          />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

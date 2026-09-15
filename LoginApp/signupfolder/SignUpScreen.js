@@ -138,7 +138,7 @@ export default function SignUpScreen({ navigation }) {
           AlternatePhoneNumber.trim(),
           emailid.trim(),
           newPassword.trim(),
-          confirmPassword.trim(),
+          confirmPassword.trim()
         ],
       );
 

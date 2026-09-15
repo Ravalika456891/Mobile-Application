@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-
 import {
   StyleSheet,
   ScrollView,
@@ -58,17 +57,25 @@ export default function LoginScreen({ navigation }) {
         [Mobile.trim(), password.trim()]
       );
       if (user) {
-        Alert.alert(
-          "Login Successful",
-          `Welcome ${user.NAME}!`
-        );
+       // Alert.alert(
+         // "Login Successful",
+          //`Welcome ${user.NAME}!`
+        //);
+
+        //after login clear credentials
+        setMobile (" ");
+        setpassword  (" ");
+
         console.log("Logged in user:", user);
-      } else {
+        navigation.navigate("Dashboard");
+      }
+      else {
         Alert.alert(
           "Login Failed",
           "Invalid mobile or password."
         );
       }
+
     } catch (error) {
       console.log("Login error:", error);
       Alert.alert(
@@ -118,7 +125,6 @@ export default function LoginScreen({ navigation }) {
     );
   }
 };*/
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -130,7 +136,6 @@ export default function LoginScreen({ navigation }) {
             source={require("../../assets/images/logo.jpg")}
             style={styles.logo}
           />
-
           <Text style={styles.title}>
             Ravalika App
           </Text>
@@ -188,7 +193,7 @@ export default function LoginScreen({ navigation }) {
             style={styles.signUp}
             onPress={() => navigation.navigate("SignUp")}
           >
-            Sign Up
+            Sign Up 
           </Text>
 
         </Text>
