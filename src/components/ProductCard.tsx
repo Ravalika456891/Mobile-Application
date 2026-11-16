@@ -1,14 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  useWindowDimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../types';
 import { useApp } from '../context/AppContext';
 
 interface ProductCardProps {
   product: Product;
+  customWidth?: number;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  customWidth,
+}) => {
   const {
     addToCart,
     removeFromCart,
@@ -18,27 +29,39 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     setSelectedProduct,
   } = useApp();
 
+  const { width } = useWindowDimensions();
+  // Responsive card width: Exactly 2 columns with 12px screen padding & 10px gap
+  const cardWidth = customWidth || Math.floor((width - 34) / 2);
+
   const quantity = getItemQuantity(product.id);
   const isFavorite = isInWishlist(product.id);
 
   const discountPercent = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    ? Math.round(
+        ((product.originalPrice - product.price) / product.originalPrice) * 100
+      )
     : 0;
 
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, { width: cardWidth }]}
       onPress={() => setSelectedProduct(product)}
-      activeOpacity={0.92}
+      activeOpacity={0.9}
     >
       {/* Top Image Container */}
       <View style={styles.imageContainer}>
-        <Image source={{ uri: product.image }} style={styles.image} resizeMode="cover" />
+        <Image
+          source={{ uri: product.image }}
+          style={styles.image}
+          resizeMode="cover"
+        />
 
         {/* Delivery Time Badge */}
         <View style={styles.deliveryBadge}>
           <Ionicons name="flash" size={10} color="#065F46" />
-          <Text style={styles.deliveryBadgeText}>{product.deliveryTimeMins}m</Text>
+          <Text style={styles.deliveryBadgeText}>
+            {product.deliveryTimeMins}m
+          </Text>
         </View>
 
         {/* Discount Badge */}
@@ -59,15 +82,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         >
           <Ionicons
             name={isFavorite ? 'heart' : 'heart-outline'}
-            size={18}
-            color={isFavorite ? '#EF4444' : '#6B7280'}
+            size={16}
+            color={isFavorite ? '#EF4444' : '#64748B'}
           />
         </TouchableOpacity>
       </View>
 
       {/* Product Details */}
       <View style={styles.detailsContainer}>
-        {/* Subcategory & Dietary */}
+        {/* Subcategory & Veg / Non-Veg Indicator */}
         <View style={styles.metaRow}>
           <Text style={styles.subcategoryText} numberOfLines={1}>
             {product.subcategory}
@@ -126,7 +149,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               activeOpacity={0.8}
             >
               <Text style={styles.addButtonText}>ADD</Text>
-              <Ionicons name="add" size={14} color="#10B981" />
+              <Ionicons name="add" size={13} color="#059669" />
             </TouchableOpacity>
           ) : (
             <View style={styles.qtyCounter}>
@@ -137,7 +160,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                   removeFromCart(product.id);
                 }}
               >
-                <Ionicons name="remove" size={14} color="#FFFFFF" />
+                <Ionicons name="remove" size={13} color="#FFFFFF" />
               </TouchableOpacity>
               <Text style={styles.qtyText}>{quantity}</Text>
               <TouchableOpacity
@@ -147,7 +170,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                   addToCart(product);
                 }}
               >
-                <Ionicons name="add" size={14} color="#FFFFFF" />
+                <Ionicons name="add" size={13} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
           )}
@@ -162,21 +185,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#F1F5F9',
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
-    flex: 1,
-    margin: 6,
-    maxWidth: '48%',
+    marginBottom: 10,
   },
   imageContainer: {
-    height: 135,
+    height: 130,
     width: '100%',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8FAFC',
     position: 'relative',
   },
   image: {
@@ -185,13 +206,13 @@ const styles = StyleSheet.create({
   },
   deliveryBadge: {
     position: 'absolute',
-    bottom: 8,
-    left: 8,
+    bottom: 6,
+    left: 6,
     backgroundColor: 'rgba(236, 253, 245, 0.95)',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingVertical: 2.5,
     borderRadius: 6,
     gap: 2,
     borderWidth: 1,
@@ -204,8 +225,8 @@ const styles = StyleSheet.create({
   },
   discountBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 6,
+    left: 6,
     backgroundColor: '#EF4444',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -213,14 +234,14 @@ const styles = StyleSheet.create({
   },
   discountText: {
     color: '#FFFFFF',
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: '800',
   },
   wishlistBtn: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -245,8 +266,8 @@ const styles = StyleSheet.create({
   },
   subcategoryText: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#9CA3AF',
+    fontWeight: '700',
+    color: '#94A3B8',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     flex: 1,
@@ -268,14 +289,15 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1F2937',
-    lineHeight: 17,
-    marginBottom: 4,
-    minHeight: 34,
+    color: '#0F172A',
+    lineHeight: 18,
+    marginBottom: 3,
+    minHeight: 36,
   },
   weightText: {
     fontSize: 11,
-    color: '#6B7280',
+    fontWeight: '600',
+    color: '#64748B',
     marginBottom: 4,
   },
   ratingRow: {
@@ -287,11 +309,11 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#374151',
+    color: '#1E293B',
   },
   reviewsText: {
     fontSize: 10,
-    color: '#9CA3AF',
+    color: '#94A3B8',
   },
   bottomRow: {
     flexDirection: 'row',
@@ -302,35 +324,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   price: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#111827',
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#0F172A',
   },
   originalPrice: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 10.5,
+    color: '#94A3B8',
     textDecorationLine: 'line-through',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#10B981',
+    borderWidth: 1.5,
+    borderColor: '#059669',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5.5,
     borderRadius: 8,
     gap: 2,
   },
   addButtonText: {
-    color: '#10B981',
+    color: '#059669',
     fontWeight: '800',
     fontSize: 12,
   },
   qtyCounter: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#10B981',
+    backgroundColor: '#059669',
     borderRadius: 8,
     paddingHorizontal: 4,
     paddingVertical: 2,

@@ -264,6 +264,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 12,
+    gap: 10,
   },
   horizontalScroll: {
     paddingHorizontal: 16,
