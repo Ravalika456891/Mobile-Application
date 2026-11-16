@@ -11,7 +11,7 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../components/Icon';
 import { useApp } from '../context/AppContext';
 
 export const ProfileScreen: React.FC = () => {
@@ -25,12 +25,13 @@ export const ProfileScreen: React.FC = () => {
     showToast,
     logout,
     updateProfile,
-    ordersHistory,
+    setAuthScreen,
   } = useApp();
 
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editName, setEditName] = useState(currentUser?.name || '');
-  const [editMobile, setEditMobile] = useState(currentUser?.mobile || '');
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [editName, setEditName] = useState(currentUser?.name || 'Ravalika');
+  const [editMobile, setEditMobile] = useState(currentUser?.mobile || '9876543210');
   const [savingProfile, setSavingProfile] = useState(false);
 
   const savedAddresses = [
@@ -73,18 +74,26 @@ export const ProfileScreen: React.FC = () => {
 
   const confirmLogout = () => {
     Alert.alert(
-      'Log Out',
+      'Log Out Account',
       'Are you sure you want to log out of MyGroceries?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Log Out',
           style: 'destructive',
-          onPress: () => logout(),
+          onPress: async () => {
+            await logout();
+          },
         },
       ]
     );
   };
+
+  const displayName = currentUser?.name || 'Ravalika';
+  const displayMobile = currentUser?.mobile
+    ? `+91 ${currentUser.mobile}`
+    : '+91 98765 43210';
+  const displayEmail = `${displayName.toLowerCase().replace(/\s+/g, '')}@mygroceries.in`;
 
   return (
     <ScrollView
@@ -92,104 +101,61 @@ export const ProfileScreen: React.FC = () => {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Profile Header */}
-      <View style={styles.profileCard}>
-        <View style={styles.avatarWrap}>
+      {/* Profile Header Card */}
+      {currentUser ? (
+        <View style={styles.profileCard}>
           <Image
             source={{
-              uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+              uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
             }}
             style={styles.avatar}
           />
-        </View>
-
-        <View style={styles.profileMeta}>
-          <View style={styles.nameRow}>
-            <Text style={styles.userName}>{currentUser?.name || 'Ravalika Sharma'}</Text>
-            <View style={styles.vipBadge}>
-              <Ionicons name="sparkles" size={10} color="#F59E0B" />
-              <Text style={styles.vipText}>PREMIUM</Text>
+          <View style={styles.profileMeta}>
+            <View style={styles.nameRow}>
+              <Text style={styles.userName}>{displayName}</Text>
+              <View style={styles.vipBadge}>
+                <Icon name="sparkles" size={10} color="#F59E0B" />
+                <Text style={styles.vipText}>VIP CLUB</Text>
+              </View>
             </View>
+            <Text style={styles.userEmail}>{displayEmail}</Text>
+            <Text style={styles.userPhone}>{displayMobile}</Text>
+
+            <TouchableOpacity
+              style={styles.editProfileBtn}
+              onPress={() => {
+                setEditName(displayName);
+                setEditMobile(currentUser?.mobile || '9876543210');
+                setEditModalVisible(true);
+              }}
+            >
+              <Text style={styles.editProfileText}>Edit Profile</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.userPhone}>+91 {currentUser?.mobile || '9876543210'}</Text>
-          <Text style={styles.userJoined}>Member since Nov 2026</Text>
         </View>
-
-        <TouchableOpacity
-          style={styles.editIconBtn}
-          onPress={() => {
-            setEditName(currentUser?.name || '');
-            setEditMobile(currentUser?.mobile || '');
-            setEditModalVisible(true);
-          }}
-        >
-          <Ionicons name="create-outline" size={20} color="#10B981" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Quick Statistics Banner */}
-      <View style={styles.statsRow}>
-        <TouchableOpacity
-          style={styles.statBox}
-          onPress={() => setActiveTab('orders')}
-        >
-          <Text style={styles.statNumber}>{ordersHistory.length}</Text>
-          <Text style={styles.statLabel}>Orders</Text>
-        </TouchableOpacity>
-        <View style={styles.statDivider} />
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>{wishlist.length}</Text>
-          <Text style={styles.statLabel}>Wishlist</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>100%</Text>
-          <Text style={styles.statLabel}>On Time</Text>
-        </View>
-      </View>
-
-      {/* Shortcuts List */}
-      <View style={styles.sectionCard}>
-        <TouchableOpacity
-          style={styles.menuRow}
-          onPress={() => setActiveTab('orders')}
-        >
-          <View style={styles.menuLeft}>
-            <View style={[styles.menuIconBox, { backgroundColor: '#ECFDF5' }]}>
-              <Ionicons name="receipt-outline" size={20} color="#10B981" />
-            </View>
-            <View>
-              <Text style={styles.menuTitle}>My Orders</Text>
-              <Text style={styles.menuSubtitle}>View past receipts and live tracking</Text>
-            </View>
+      ) : (
+        <View style={styles.profileCard}>
+          <View style={[styles.avatar, styles.guestAvatar]}>
+            <Icon name="person" size={32} color="#059669" />
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-        </TouchableOpacity>
-
-        <View style={styles.menuDivider} />
-
-        <TouchableOpacity
-          style={styles.menuRow}
-          onPress={() => setActiveTab('cart')}
-        >
-          <View style={styles.menuLeft}>
-            <View style={[styles.menuIconBox, { backgroundColor: '#EFF6FF' }]}>
-              <Ionicons name="cart-outline" size={20} color="#3B82F6" />
-            </View>
-            <View>
-              <Text style={styles.menuTitle}>Shopping Cart</Text>
-              <Text style={styles.menuSubtitle}>Items saved for purchase</Text>
-            </View>
+          <View style={styles.profileMeta}>
+            <Text style={styles.userName}>Guest User</Text>
+            <Text style={styles.userEmail}>Log in to save addresses & view orders</Text>
+            <TouchableOpacity
+              style={[styles.editProfileBtn, { backgroundColor: '#059669', borderColor: '#059669', marginTop: 8 }]}
+              onPress={() => setAuthScreen('login')}
+            >
+              <Text style={[styles.editProfileText, { color: '#FFFFFF' }]}>Log In / Sign Up</Text>
+            </TouchableOpacity>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-        </TouchableOpacity>
-      </View>
+        </View>
+      )}
 
-      {/* Saved Addresses Selector */}
+      {/* Saved Addresses */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionTitleRow}>
-          <Ionicons name="location-outline" size={18} color="#10B981" />
-          <Text style={styles.sectionTitle}>Saved Delivery Addresses</Text>
+          <Icon name="location-outline" size={18} color="#10B981" />
+          <Text style={styles.sectionTitle}>Saved Addresses</Text>
         </View>
 
         {savedAddresses.map((addr) => {
@@ -204,12 +170,13 @@ export const ProfileScreen: React.FC = () => {
               }}
             >
               <View style={styles.addressLeft}>
-                <Ionicons
-                  name={isSelected ? 'radio-button-on' : 'radio-button-off'}
-                  size={18}
-                  color={isSelected ? '#10B981' : '#9CA3AF'}
+                <View
+                  style={[
+                    styles.radioDot,
+                    isSelected && styles.radioDotSelected,
+                  ]}
                 />
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.addressTitle}>{addr.title}</Text>
                   <Text style={styles.addressDetail} numberOfLines={1}>
                     {addr.address}
@@ -221,33 +188,154 @@ export const ProfileScreen: React.FC = () => {
         })}
       </View>
 
-      {/* Customer Support & Help */}
+      {/* Saved Favorites */}
+      <View style={styles.sectionCard}>
+        <View style={styles.sectionTitleRow}>
+          <Icon name="heart-outline" size={18} color="#EF4444" />
+          <Text style={styles.sectionTitle}>
+            Saved Favorites ({wishlistProducts.length})
+          </Text>
+        </View>
+
+        {wishlistProducts.length === 0 ? (
+          <Text style={styles.emptyWishlistText}>
+            No favorites yet. Tap the heart on any product to save it here!
+          </Text>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.wishlistScroll}
+          >
+            {wishlistProducts.map((p) => (
+              <TouchableOpacity
+                key={p.id}
+                style={styles.wishItemCard}
+                onPress={() => setActiveTab('home')}
+              >
+                <Image source={{ uri: p.image }} style={styles.wishItemImg} />
+                <Text style={styles.wishItemName} numberOfLines={1}>
+                  {p.name}
+                </Text>
+                <Text style={styles.wishItemPrice}>₹{p.price}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+
+      {/* Quick Menu Options */}
       <View style={styles.sectionCard}>
         <TouchableOpacity style={styles.menuRow} onPress={handleSupport}>
           <View style={styles.menuLeft}>
-            <View style={[styles.menuIconBox, { backgroundColor: '#FFFBEB' }]}>
-              <Ionicons name="headset-outline" size={20} color="#D97706" />
-            </View>
-            <View>
-              <Text style={styles.menuTitle}>24x7 Customer Support</Text>
-              <Text style={styles.menuSubtitle}>Instant help for any delivery issue</Text>
-            </View>
+            <Icon name="headset-outline" size={18} color="#3B82F6" />
+            <Text style={styles.menuText}>24x7 Live Customer Care</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          <Icon name="chevron-forward" size={16} color="#9CA3AF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => setActiveTab('tracking')}
+        >
+          <View style={styles.menuLeft}>
+            <Icon name="bicycle" size={18} color="#10B981" />
+            <Text style={styles.menuText}>Track Ongoing Delivery</Text>
+          </View>
+          <Icon name="chevron-forward" size={16} color="#9CA3AF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => showToast('App notifications enabled')}
+        >
+          <View style={styles.menuLeft}>
+            <Icon name="notifications-outline" size={18} color="#F59E0B" />
+            <Text style={styles.menuText}>Real-Time Push Alerts</Text>
+          </View>
+          <Icon name="chevron-forward" size={16} color="#9CA3AF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => showToast('Security & encryption active')}
+        >
+          <View style={styles.menuLeft}>
+            <Icon name="shield-checkmark-outline" size={18} color="#8B5CF6" />
+            <Text style={styles.menuText}>Payment Safety & Privacy</Text>
+          </View>
+          <Icon name="chevron-forward" size={16} color="#9CA3AF" />
         </TouchableOpacity>
       </View>
 
-      {/* Log Out Button */}
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={confirmLogout}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-        <Text style={styles.logoutText}>Log Out</Text>
-      </TouchableOpacity>
+      {/* Prominent Log Out Button (or Log In button if guest) */}
+      {currentUser ? (
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => setLogoutModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Icon name="log-out-outline" size={20} color="#DC2626" />
+          <Text style={styles.logoutText}>Log Out Account</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={styles.loginBannerButton}
+          onPress={() => setAuthScreen('login')}
+          activeOpacity={0.85}
+        >
+          <Icon name="person" size={20} color="#FFFFFF" />
+          <Text style={styles.loginBannerText}>Log In or Create Account</Text>
+        </TouchableOpacity>
+      )}
 
-      <Text style={styles.appFooterText}>MyGroceries v1.0 • React Native & SQLite</Text>
+      <View style={styles.footerInfo}>
+        <Text style={styles.footerBrand}>⚡ MyGroceries Native v1.0.0</Text>
+        <Text style={styles.footerDesc}>
+          Direct Native Android App • Superfast 10-Minute Delivery (₹ INR)
+        </Text>
+      </View>
+
+      {/* Logout Confirmation In-App Modal */}
+      <Modal
+        visible={logoutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.logoutModalCard}>
+            <View style={styles.logoutIconCircle}>
+              <Icon name="log-out-outline" size={30} color="#DC2626" />
+            </View>
+            <Text style={styles.logoutModalTitle}>Log Out of MyGroceries?</Text>
+            <Text style={styles.logoutModalDesc}>
+              Are you sure you want to log out, {displayName}? You can sign back in anytime with your mobile number.
+            </Text>
+
+            <View style={styles.logoutModalActions}>
+              <TouchableOpacity
+                style={styles.cancelLogoutBtn}
+                onPress={() => setLogoutModalVisible(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.cancelLogoutText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.confirmLogoutBtn}
+                onPress={async () => {
+                  setLogoutModalVisible(false);
+                  await logout();
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.confirmLogoutText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Edit Profile Modal */}
       <Modal
@@ -261,7 +349,7 @@ export const ProfileScreen: React.FC = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
               <TouchableOpacity onPress={() => setEditModalVisible(false)}>
-                <Ionicons name="close" size={22} color="#6B7280" />
+                <Icon name="close" size={22} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
@@ -312,30 +400,28 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    gap: 14,
-    paddingBottom: 40,
+    paddingBottom: 90,
   },
   profileCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
     elevation: 2,
   },
-  avatarWrap: {
-    position: 'relative',
-    marginRight: 14,
-  },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#E5E7EB',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginRight: 14,
   },
   profileMeta: {
     flex: 1,
@@ -343,8 +429,8 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
+    gap: 8,
+    marginBottom: 2,
   },
   userName: {
     fontSize: 18,
@@ -354,74 +440,49 @@ const styles = StyleSheet.create({
   vipBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 10,
+    gap: 3,
   },
   vipText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
-    color: '#B45309',
+    color: '#92400E',
   },
-  userPhone: {
-    fontSize: 13,
-    color: '#4B5563',
-    fontWeight: '500',
-  },
-  userJoined: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
-  editIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#ECFDF5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#10B981',
-  },
-  statLabel: {
+  userEmail: {
     fontSize: 12,
     color: '#6B7280',
-    marginTop: 2,
-    fontWeight: '500',
+    marginBottom: 2,
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: '#E5E7EB',
+  userPhone: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 6,
+  },
+  editProfileBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  editProfileText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#059669',
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -431,145 +492,270 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#111827',
+  },
+  addressItem: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  addressItemSelected: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#10B981',
+  },
+  addressLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  radioDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#9CA3AF',
+  },
+  radioDotSelected: {
+    borderColor: '#10B981',
+    backgroundColor: '#10B981',
+  },
+  addressTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  addressDetail: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  emptyWishlistText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+    paddingVertical: 8,
+  },
+  wishlistScroll: {
+    gap: 10,
+  },
+  wishItemCard: {
+    width: 100,
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  wishItemImg: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  wishItemName: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#374151',
+    textAlign: 'center',
+  },
+  wishItemPrice: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#111827',
+    marginTop: 2,
   },
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   menuLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  menuIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  menuSubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 1,
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 12,
-  },
-  addressItem: {
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 8,
-    backgroundColor: '#FAFAFA',
-  },
-  addressItemSelected: {
-    borderColor: '#10B981',
-    backgroundColor: '#F0FDF4',
-  },
-  addressLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  addressTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  addressDetail: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-    maxWidth: 240,
+  menuText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
     backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderWidth: 1.5,
+    borderColor: '#FECACA',
+    borderRadius: 16,
     paddingVertical: 14,
-    borderRadius: 14,
-    marginTop: 8,
+    marginTop: 6,
+    marginBottom: 16,
+    gap: 8,
   },
   logoutText: {
-    color: '#EF4444',
+    color: '#DC2626',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  appFooterText: {
-    textAlign: 'center',
+  footerInfo: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  footerBrand: {
     fontSize: 12,
+    fontWeight: '800',
+    color: '#374151',
+  },
+  footerDesc: {
+    fontSize: 10,
     color: '#9CA3AF',
-    marginTop: 8,
+    marginTop: 2,
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
-    alignItems: 'center',
     padding: 24,
   },
   modalCard: {
-    width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
-    gap: 14,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 14,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: '#111827',
   },
   inputGroup: {
-    gap: 6,
+    marginBottom: 12,
   },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#374151',
+    marginBottom: 4,
   },
   modalInput: {
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#111827',
+    height: 44,
+    fontSize: 14,
     backgroundColor: '#F9FAFB',
+    color: '#111827',
   },
   saveProfileBtn: {
-    backgroundColor: '#10B981',
-    paddingVertical: 12,
+    backgroundColor: '#059669',
     borderRadius: 12,
+    height: 46,
     alignItems: 'center',
-    marginTop: 6,
+    justifyContent: 'center',
+    marginTop: 8,
   },
   saveProfileBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  guestAvatar: {
+    backgroundColor: '#D1FAE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    elevation: 8,
+  },
+  logoutIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  logoutModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  logoutModalDesc: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 19,
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  logoutModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelLogoutBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  cancelLogoutText: {
+    fontSize: 14,
     fontWeight: '700',
+    color: '#4B5563',
+  },
+  confirmLogoutBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmLogoutText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  loginBannerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#059669',
+    borderRadius: 16,
+    paddingVertical: 14,
+    marginTop: 6,
+    marginBottom: 16,
+    gap: 8,
+  },
+  loginBannerText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });

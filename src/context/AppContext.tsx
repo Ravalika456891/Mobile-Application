@@ -13,13 +13,11 @@ import {
   saveCartDB,
   loadCartDB,
   saveOrderDB,
-  getOrdersDB,
 } from '../services/database';
 
 interface AppContextType {
   currentUser: LocalUser | null;
-  isCheckingSession: boolean;
-  authScreen: 'splash' | 'login' | 'register' | null;
+  authScreen: 'login' | 'register' | null;
   products: Product[];
   cart: CartItem[];
   cartCount: number;
@@ -27,22 +25,21 @@ interface AppContextType {
   cartTotal: number;
   wishlist: string[];
   activeOrder: Order | null;
-  ordersHistory: Order[];
   selectedAddress: string;
   appliedCoupon: Coupon | null;
   searchQuery: string;
   selectedCategory: CategoryId;
-  activeTab: 'home' | 'categories' | 'cart' | 'tracking' | 'profile' | 'orders';
+  activeTab: 'home' | 'categories' | 'cart' | 'tracking' | 'profile';
   selectedProduct: Product | null;
   toastMessage: string | null;
 
-  setAuthScreen: (screen: 'splash' | 'login' | 'register' | null) => void;
+  setAuthScreen: (screen: 'login' | 'register' | null) => void;
   login: (mobile: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, mobile: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (name: string, mobile: string) => Promise<{ success: boolean; error?: string }>;
 
-  addToCart: (product: Product) => boolean;
+  addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
   deleteFromCart: (productId: string) => void;
   clearCart: () => void;
@@ -51,16 +48,15 @@ interface AppContextType {
   getItemQuantity: (productId: string) => number;
   applyCoupon: (code: string) => boolean;
   removeCoupon: () => void;
-  placeOrder: (paymentMethod: string, tipAmount: number) => Promise<void>;
+  placeOrder: (paymentMethod: string, tipAmount: number) => void;
   cancelActiveOrder: () => void;
   simulateNextStage: () => void;
   setSelectedAddress: (addr: string) => void;
   setSearchQuery: (query: string) => void;
   setSelectedCategory: (cat: CategoryId) => void;
-  setActiveTab: (tab: 'home' | 'categories' | 'cart' | 'tracking' | 'profile' | 'orders') => void;
+  setActiveTab: (tab: 'home' | 'categories' | 'cart' | 'tracking' | 'profile') => void;
   setSelectedProduct: (prod: Product | null) => void;
   showToast: (msg: string) => void;
-  refreshOrders: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -71,24 +67,27 @@ const ORDER_STAGES: OrderStage[] = [
   'RIDER_ASSIGNED',
   'OUT_FOR_DELIVERY',
   'ARRIVING',
-  'DELIVERED',
+  'DELIVERED'
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<LocalUser | null>(null);
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
-  const [authScreen, setAuthScreen] = useState<'splash' | 'login' | 'register' | null>('splash');
+  const [currentUser, setCurrentUser] = useState<LocalUser | null>({
+    id: 1,
+    name: 'Ravalika',
+    mobile: '9876543210',
+    created_at: new Date().toISOString(),
+  });
+  const [authScreen, setAuthScreen] = useState<'login' | 'register' | null>(null);
 
   const [products] = useState<Product[]>(PRODUCTS);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>(['fv-1', 'dairy-1']);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [ordersHistory, setOrdersHistory] = useState<Order[]>([]);
   const [selectedAddress, setSelectedAddress] = useState('Flat 402, Green Valley Apts, Silicon Boulevard');
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>('all');
-  const [activeTab, setActiveTab] = useState<'home' | 'categories' | 'cart' | 'tracking' | 'profile' | 'orders'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'categories' | 'cart' | 'tracking' | 'profile'>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -105,47 +104,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [toastMessage]);
 
-  // Session & database initialization
+  // Load session from database on startup
   useEffect(() => {
-    const initApp = async () => {
+    const init = async () => {
       try {
         await initDatabase();
         const savedSession = await getSessionDB();
         if (savedSession) {
           setCurrentUser(savedSession);
-          setAuthScreen(null);
-        } else {
-          setAuthScreen('splash');
         }
-
-        // Load persisted orders
-        const savedOrders = await getOrdersDB();
-        if (savedOrders && savedOrders.length > 0) {
-          setOrdersHistory(savedOrders);
-        }
-
-        // Load persisted cart
-        const savedCartRows = await loadCartDB();
-        if (savedCartRows && savedCartRows.length > 0) {
-          const restoredCart: CartItem[] = [];
-          for (const row of savedCartRows) {
-            const product = PRODUCTS.find((p) => p.id === row.product_id);
-            if (product) {
-              restoredCart.push({ product, quantity: row.quantity });
-            }
-          }
-          if (restoredCart.length > 0) {
-            setCart(restoredCart);
-          }
-        }
-      } catch (err) {
-        console.warn('App initialization warning:', err);
-      } finally {
-        setIsCheckingSession(false);
+      } catch (e) {
+        console.warn('Session init warning:', e);
       }
     };
-
-    initApp();
+    init();
   }, []);
 
   const login = async (mobile: string, pass: string): Promise<{ success: boolean; error?: string }> => {
@@ -175,11 +147,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(null);
     setAuthScreen('login');
     setActiveTab('home');
-    showToast('Logged out successfully');
+    showToast('Logged out of account');
   };
 
   const updateProfile = async (name: string, mobile: string): Promise<{ success: boolean; error?: string }> => {
-    if (!currentUser) return { success: false, error: 'No active user session' };
+    if (!currentUser) return { success: false, error: 'No active session' };
     const res = await updateUserDB(currentUser.id, name, mobile);
     if (res.success) {
       setCurrentUser({ ...currentUser, name, mobile });
@@ -189,74 +161,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: false, error: res.error || 'Update failed' };
   };
 
-  const refreshOrders = async () => {
-    const orders = await getOrdersDB();
-    setOrdersHistory(orders);
-  };
-
-  // Cart operations with stock limit enforcement (PRD Section 6.8)
-  const addToCart = (product: Product): boolean => {
-    let success = true;
+  const addToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
-        if (existing.quantity >= product.stockCount) {
-          showToast(`Cannot add more. Only ${product.stockCount} available in stock.`);
-          success = false;
-          return prev;
-        }
-        const updated = prev.map((item) =>
+        return prev.map((item) =>
           item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
-        saveCartDB(updated.map((i) => ({ productId: i.product.id, quantity: i.quantity })));
-        return updated;
       }
-      if (product.stockCount <= 0) {
-        showToast('Sorry, this item is currently out of stock.');
-        success = false;
-        return prev;
-      }
-      const updated = [...prev, { product, quantity: 1 }];
-      saveCartDB(updated.map((i) => ({ productId: i.product.id, quantity: i.quantity })));
-      return updated;
+      return [...prev, { product, quantity: 1 }];
     });
-
-    if (success) {
-      showToast(`Added ${product.name} to cart`);
-    }
-    return success;
+    showToast(`Added ${product.name} to cart`);
   };
 
   const removeFromCart = (productId: string) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === productId);
       if (!existing) return prev;
-      let updated: CartItem[];
       if (existing.quantity <= 1) {
-        updated = prev.filter((item) => item.product.id !== productId);
-      } else {
-        updated = prev.map((item) =>
-          item.product.id === productId ? { ...item, quantity: item.quantity - 1 } : item
-        );
+        return prev.filter((item) => item.product.id !== productId);
       }
-      saveCartDB(updated.map((i) => ({ productId: i.product.id, quantity: i.quantity })));
-      return updated;
+      return prev.map((item) =>
+        item.product.id === productId ? { ...item, quantity: item.quantity - 1 } : item
+      );
     });
   };
 
   const deleteFromCart = (productId: string) => {
-    setCart((prev) => {
-      const updated = prev.filter((item) => item.product.id !== productId);
-      saveCartDB(updated.map((i) => ({ productId: i.product.id, quantity: i.quantity })));
-      return updated;
-    });
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
     showToast('Item removed from cart');
   };
 
   const clearCart = () => {
     setCart([]);
     setAppliedCoupon(null);
-    saveCartDB([]);
   };
 
   const getItemQuantity = (productId: string) => {
@@ -275,22 +213,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const isInWishlist = (productId: string) => wishlist.includes(productId);
+  const isInWishlist = (productId: string) => {
+    return wishlist.includes(productId);
+  };
 
-  const applyCoupon = (code: string) => {
+  const applyCoupon = (code: string): boolean => {
     const coupon = AVAILABLE_COUPONS.find(
-      (c) => c.code.toUpperCase() === code.trim().toUpperCase()
+      (c) => c.code.toUpperCase() === code.toUpperCase()
     );
     if (!coupon) {
-      showToast('Invalid promo coupon');
+      showToast('Invalid coupon code');
       return false;
     }
     if (cartSubtotal < coupon.minOrder) {
-      showToast(`Min order for ${coupon.code} is ₹${coupon.minOrder}`);
+      showToast(`Add ₹${coupon.minOrder - cartSubtotal} more to apply this coupon`);
       return false;
     }
     setAppliedCoupon(coupon);
-    showToast(`Coupon ${coupon.code} applied! Saved ₹${calculateDiscount(coupon)}`);
+    showToast(`Coupon applied! ${coupon.discountPercentage}% OFF`);
     return true;
   };
 
@@ -299,146 +239,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Coupon removed');
   };
 
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const cartSubtotal = Number(
-    cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0).toFixed(0)
-  );
-
-  const calculateDiscount = (coupon: Coupon | null) => {
-    if (!coupon) return 0;
-    const discount = (cartSubtotal * coupon.discountPercentage) / 100;
-    return Number(Math.min(discount, coupon.maxDiscount).toFixed(0));
-  };
-
-  const discountAmount = calculateDiscount(appliedCoupon);
-  const deliveryFee = cartSubtotal > 299 ? 0 : 25;
-  const cartTotal = Number(
-    Math.max(0, cartSubtotal - discountAmount + (cartCount > 0 ? deliveryFee : 0)).toFixed(2)
-  );
-
-  // REAL-TIME ORDER SIMULATION
-  useEffect(() => {
-    if (!activeOrder || activeOrder.status === 'DELIVERED') return;
-
-    const secondTimer = setInterval(() => {
-      setActiveOrder((prev) => {
-        if (!prev || prev.status === 'DELIVERED') return prev;
-        const newSec = Math.max(0, prev.remainingSeconds - 1);
-        return {
-          ...prev,
-          remainingSeconds: newSec,
-          rider: {
-            ...prev.rider,
-            currentLatProgress: Math.min(1, prev.rider.currentLatProgress + 0.005),
-          },
-        };
-      });
-    }, 1000);
-
-    const stageTimer = setInterval(() => {
-      setActiveOrder((prev) => {
-        if (!prev) return null;
-        const currentIndex = ORDER_STAGES.indexOf(prev.status);
-        if (currentIndex < ORDER_STAGES.length - 1) {
-          const nextStatus = ORDER_STAGES[currentIndex + 1];
-          let statusMessage = '';
-          switch (nextStatus) {
-            case 'PACKING':
-              statusMessage = 'Store is packing your groceries fresh!';
-              break;
-            case 'RIDER_ASSIGNED':
-              statusMessage = `${prev.rider.name} is on the way to pick up!`;
-              break;
-            case 'OUT_FOR_DELIVERY':
-              statusMessage = 'Order is out for delivery! 🛵';
-              break;
-            case 'ARRIVING':
-              statusMessage = 'Rider has reached your address!';
-              break;
-            case 'DELIVERED':
-              statusMessage = 'Order delivered! Enjoy your fresh groceries 🎉';
-              break;
-          }
-          if (statusMessage) showToast(statusMessage);
-          return {
-            ...prev,
-            status: nextStatus,
-          };
-        }
-        return prev;
-      });
-    }, 20000);
-
-    return () => {
-      clearInterval(secondTimer);
-      clearInterval(stageTimer);
-    };
-  }, [activeOrder]);
-
-  const simulateNextStage = () => {
-    if (!activeOrder) return;
-    const currentIndex = ORDER_STAGES.indexOf(activeOrder.status);
-    if (currentIndex < ORDER_STAGES.length - 1) {
-      const nextStatus = ORDER_STAGES[currentIndex + 1];
-      setActiveOrder((prev) => (prev ? { ...prev, status: nextStatus } : null));
-      showToast(`Status updated to ${nextStatus.replace(/_/g, ' ')}`);
-    }
-  };
-
-  const placeOrder = async (paymentMethod: string, tipAmount: number) => {
-    if (cart.length === 0) return;
-
-    const totalWithTip = Number((cartTotal + tipAmount).toFixed(2));
+  const placeOrder = (paymentMethod: string, tipAmount: number) => {
     const newOrder: Order = {
-      id: 'MG-' + Math.floor(100000 + Math.random() * 900000),
-      createdAt: new Date(),
+      id: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
       items: [...cart],
-      subtotal: cartSubtotal,
-      deliveryFee: deliveryFee,
-      discount: discountAmount,
-      tip: tipAmount,
-      total: totalWithTip,
-      status: 'CONFIRMED',
+      total: cartTotal + tipAmount,
+      stage: 'CONFIRMED',
       estimatedDeliveryMins: 10,
-      remainingSeconds: 10 * 60,
+      createdAt: new Date(),
       deliveryAddress: selectedAddress,
+      riderName: 'Vikram Singh',
+      riderPhone: '+91 98765 43210',
       paymentMethod,
-      rider: {
-        name: 'Rahul Sharma',
-        phone: '+91 98765 43210',
-        rating: 4.9,
-        vehicle: 'Eco Electric Scooter',
-        vehicleNumber: 'KA-05-EV-4091',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-        currentLatProgress: 0.1,
-      },
     };
-
-    // Save to SQLite
-    await saveOrderDB(newOrder, currentUser?.id);
-
     setActiveOrder(newOrder);
-    setOrdersHistory((prev) => [newOrder, ...prev]);
-    clearCart();
+    setCart([]);
+    setAppliedCoupon(null);
     setActiveTab('tracking');
-    showToast('🎉 Order placed successfully! Tracking your delivery.');
+    showToast('Order confirmed! Superfast delivery started ⚡');
   };
 
   const cancelActiveOrder = () => {
-    if (activeOrder) {
-      const cancelled: Order = { ...activeOrder, status: 'Cancelled' };
-      setActiveOrder(null);
-      saveOrderDB(cancelled, currentUser?.id);
-      refreshOrders();
-      showToast('Active order cancelled');
+    setActiveOrder(null);
+    showToast('Order cancelled');
+  };
+
+  const simulateNextStage = () => {
+    if (!activeOrder) return;
+    const currentIndex = ORDER_STAGES.indexOf(activeOrder.stage);
+    if (currentIndex < ORDER_STAGES.length - 1) {
+      const nextStage = ORDER_STAGES[currentIndex + 1];
+      setActiveOrder({ ...activeOrder, stage: nextStage });
+      showToast(`Order status updated: ${nextStage.replace(/_/g, ' ')}`);
+    } else {
+      showToast('Order already delivered!');
     }
   };
+
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartSubtotal = cart.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
+
+  let discount = 0;
+  if (appliedCoupon) {
+    const calculated = (cartSubtotal * appliedCoupon.discountPercentage) / 100;
+    discount = Math.min(calculated, appliedCoupon.maxDiscount);
+  }
+  const deliveryFee = cartSubtotal > 299 ? 0 : 25;
+  const cartTotal = Math.max(0, cartSubtotal - discount + deliveryFee);
 
   return (
     <AppContext.Provider
       value={{
         currentUser,
-        isCheckingSession,
         authScreen,
         products,
         cart,
@@ -447,7 +302,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cartTotal,
         wishlist,
         activeOrder,
-        ordersHistory,
         selectedAddress,
         appliedCoupon,
         searchQuery,
@@ -455,11 +309,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activeTab,
         selectedProduct,
         toastMessage,
+
         setAuthScreen,
         login,
         register,
         logout,
         updateProfile,
+
         addToCart,
         removeFromCart,
         deleteFromCart,
@@ -478,7 +334,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setActiveTab,
         setSelectedProduct,
         showToast,
-        refreshOrders,
       }}
     >
       {children}

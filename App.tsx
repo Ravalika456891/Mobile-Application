@@ -1,25 +1,21 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { StyleSheet, View, SafeAreaView, Platform, Text, TouchableOpacity } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, View, SafeAreaView, StatusBar, Platform, Text, TouchableOpacity } from 'react-native';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { Header } from './src/components/Header';
 import { BottomNav } from './src/components/BottomNav';
 import { Toast } from './src/components/Toast';
 import { ProductDetailModal } from './src/components/ProductDetailModal';
-import { SplashScreen } from './src/screens/SplashScreen';
-import { LoginScreen } from './src/screens/LoginScreen';
-import { RegisterScreen } from './src/screens/RegisterScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { CartScreen } from './src/screens/CartScreen';
-import { OrdersScreen } from './src/screens/OrdersScreen';
 import { TrackingScreen } from './src/screens/TrackingScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { LoginScreen } from './src/screens/LoginScreen';
+import { RegisterScreen } from './src/screens/RegisterScreen';
 
-// Safe StatusBar wrapper that never crashes on Android 15 / Edge-to-Edge Expo Go
-const SafeStatusBar: React.FC<{ style?: 'dark' | 'light' | 'auto' }> = ({ style = 'dark' }) => {
+const SafeStatusBar: React.FC = () => {
   try {
-    return <StatusBar style={style} />;
+    return <StatusBar barStyle="dark-content" />;
   } catch {
     return null;
   }
@@ -74,21 +70,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 const MainNavigator: React.FC = () => {
   const { activeTab, authScreen } = useApp();
 
-  // Authentication Flow (Splash, Login, Register) per PRD Sections 6.1, 6.2, 6.3 & 7
-  if (authScreen === 'splash') {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <SafeStatusBar style="dark" />
-        <Toast />
-        <SplashScreen />
-      </SafeAreaView>
-    );
-  }
-
   if (authScreen === 'login') {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <SafeStatusBar style="dark" />
+        <SafeStatusBar />
         <Toast />
         <LoginScreen />
       </SafeAreaView>
@@ -98,22 +83,19 @@ const MainNavigator: React.FC = () => {
   if (authScreen === 'register') {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <SafeStatusBar style="dark" />
+        <SafeStatusBar />
         <Toast />
         <RegisterScreen />
       </SafeAreaView>
     );
   }
 
-  // Main App Navigation per PRD Section 7
   const renderCurrentScreen = () => {
     switch (activeTab) {
       case 'home':
         return <HomeScreen />;
       case 'categories':
         return <ExploreScreen />;
-      case 'orders':
-        return <OrdersScreen />;
       case 'cart':
         return <CartScreen />;
       case 'tracking':
@@ -127,19 +109,15 @@ const MainNavigator: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <SafeStatusBar style="dark" />
+      <SafeStatusBar />
       <Toast />
       
-      {/* Top Header shown on all screens except cart which has its own header */}
       {activeTab !== 'cart' && <Header />}
 
-      {/* Main Content Area */}
       <View style={styles.body}>{renderCurrentScreen()}</View>
 
-      {/* Bottom Navigation */}
       <BottomNav />
 
-      {/* Modals */}
       <ProductDetailModal />
     </SafeAreaView>
   );

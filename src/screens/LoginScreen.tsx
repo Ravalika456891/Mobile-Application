@@ -12,7 +12,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../components/Icon';
 import { useApp } from '../context/AppContext';
 import { resetPasswordDB } from '../services/database';
 
@@ -31,14 +31,8 @@ export const LoginScreen: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
 
-  const validateMobile = (num: string): boolean => {
-    const clean = num.replace(/\D/g, '');
-    return clean.length === 10;
-  };
-
   const handleLogin = async () => {
     setErrorMessage(null);
-
     const cleanMobile = mobile.replace(/\D/g, '');
 
     if (!cleanMobile) {
@@ -107,7 +101,7 @@ export const LoginScreen: React.FC = () => {
         ]
       );
     } else {
-      Alert.alert('Reset Failed', res.error || 'Mobile number not found in our database.');
+      Alert.alert('Reset Failed', res.error || 'Mobile number not found in database.');
     }
   };
 
@@ -119,35 +113,26 @@ export const LoginScreen: React.FC = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {/* Back / Brand Header */}
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => setAuthScreen('splash')}
-          >
-            <Ionicons name="arrow-back" size={22} color="#1F2937" />
-          </TouchableOpacity>
-          <View style={styles.brandTitleWrap}>
-            <Text style={styles.brandTitle}>MyGroceries</Text>
+        {/* Brand Header */}
+        <View style={styles.brandHeader}>
+          <View style={styles.logoBadge}>
+            <Icon name="flash" size={28} color="#059669" />
           </View>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.titleSection}>
-          <Text style={styles.screenHeading}>Welcome Back 👋</Text>
-          <Text style={styles.screenSubtitle}>
-            Log in to order fresh groceries with lightning delivery
+          <Text style={styles.brandTitle}>MyGroceries</Text>
+          <Text style={styles.brandSubtitle}>
+            Fresh Groceries & Essentials Delivered in 10 Minutes
           </Text>
         </View>
 
-        {/* Demo Fast Login Banner */}
+        {/* 1-Tap Demo Account Helper */}
         <TouchableOpacity
           style={styles.demoBanner}
           onPress={fillDemoCredentials}
           activeOpacity={0.8}
         >
-          <Ionicons name="sparkles" size={18} color="#D97706" />
+          <Icon name="sparkles" size={18} color="#D97706" />
           <View style={{ flex: 1 }}>
             <Text style={styles.demoBannerTitle}>Quick 1-Tap Demo Account</Text>
             <Text style={styles.demoBannerText}>
@@ -160,7 +145,7 @@ export const LoginScreen: React.FC = () => {
         {/* Error Alert Box */}
         {errorMessage && (
           <View style={styles.errorBox}>
-            <Ionicons name="alert-circle" size={18} color="#DC2626" />
+            <Icon name="alert-circle" size={18} color="#DC2626" />
             <Text style={styles.errorText}>{errorMessage}</Text>
           </View>
         )}
@@ -187,7 +172,7 @@ export const LoginScreen: React.FC = () => {
                 }}
               />
               {mobile.length === 10 && (
-                <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                <Icon name="checkmark-circle" size={20} color="#10B981" />
               )}
             </View>
           </View>
@@ -206,7 +191,7 @@ export const LoginScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+              <Icon name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 style={styles.textInput}
                 placeholder="Enter your password"
@@ -222,7 +207,7 @@ export const LoginScreen: React.FC = () => {
                 onPress={() => setShowPassword(!showPassword)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons
+                <Icon
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
                   color="#6B7280"
@@ -243,9 +228,18 @@ export const LoginScreen: React.FC = () => {
             ) : (
               <>
                 <Text style={styles.submitButtonText}>Log In</Text>
-                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                <Icon name="arrow-forward" size={18} color="#FFFFFF" />
               </>
             )}
+          </TouchableOpacity>
+
+          {/* Skip / Guest button */}
+          <TouchableOpacity
+            style={styles.guestButton}
+            onPress={() => setAuthScreen(null)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.guestButtonText}>Continue as Guest</Text>
           </TouchableOpacity>
         </View>
 
@@ -270,7 +264,7 @@ export const LoginScreen: React.FC = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Reset Password</Text>
               <TouchableOpacity onPress={() => setForgotModalVisible(false)}>
-                <Ionicons name="close" size={22} color="#6B7280" />
+                <Icon name="close" size={22} color="#6B7280" />
               </TouchableOpacity>
             </View>
             <Text style={styles.modalSubtitle}>
@@ -301,7 +295,7 @@ export const LoginScreen: React.FC = () => {
             </View>
 
             <TouchableOpacity
-              style={styles.modalSubmitButton}
+              style={styles.modalSubmitBtn}
               onPress={handleResetPassword}
               disabled={resetLoading}
             >
@@ -324,99 +318,101 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 54 : 32,
+    paddingTop: 36,
     paddingBottom: 40,
+    justifyContent: 'center',
   },
-  headerRow: {
-    flexDirection: 'row',
+  brandHeader: {
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 24,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#F3F4F6',
+  logoBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: '#ECFDF5',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  brandTitleWrap: {
-    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
   brandTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#065F46',
-  },
-  titleSection: {
-    marginBottom: 20,
-  },
-  screenHeading: {
     fontSize: 26,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 6,
+    fontWeight: '900',
+    color: '#065F46',
+    letterSpacing: -0.5,
   },
-  screenSubtitle: {
-    fontSize: 14,
+  brandSubtitle: {
+    fontSize: 13,
     color: '#6B7280',
-    lineHeight: 20,
+    textAlign: 'center',
+    marginTop: 4,
+    maxWidth: 280,
+    lineHeight: 18,
   },
   demoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFBEB',
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: '#FEF3C7',
     borderWidth: 1,
     borderColor: '#FDE68A',
+    borderRadius: 14,
+    padding: 12,
     marginBottom: 20,
     gap: 10,
   },
   demoBannerTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     color: '#92400E',
   },
   demoBannerText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#B45309',
-    marginTop: 2,
+    marginTop: 1,
   },
   demoBannerAction: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#D97706',
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#059669',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#10B981',
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: '#FECACA',
+    borderRadius: 12,
     padding: 12,
-    borderRadius: 10,
-    marginBottom: 16,
+    marginBottom: 18,
+    gap: 8,
   },
   errorText: {
-    color: '#B91C1C',
-    fontSize: 13,
-    fontWeight: '500',
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '600',
     flex: 1,
   },
   form: {
-    gap: 18,
+    marginBottom: 20,
   },
   inputGroup: {
-    gap: 6,
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#374151',
+    marginBottom: 6,
   },
   passwordLabelRow: {
     flexDirection: 'row',
@@ -424,96 +420,110 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   forgotText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#10B981',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#FAFAFA',
+    borderRadius: 14,
+    paddingHorizontal: 14,
     height: 52,
+    backgroundColor: '#F9FAFB',
   },
   countryCode: {
-    paddingRight: 8,
+    paddingRight: 10,
     borderRightWidth: 1,
-    borderRightColor: '#D1D5DB',
+    borderRightColor: '#E5E7EB',
     marginRight: 10,
   },
   countryCodeText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#374151',
+    fontWeight: '800',
+    color: '#1F2937',
   },
   inputIcon: {
-    marginRight: 10,
+    marginRight: 8,
   },
   textInput: {
     flex: 1,
     fontSize: 15,
     color: '#111827',
-    paddingVertical: 8,
+    fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#059669',
+    borderRadius: 14,
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 8,
     gap: 8,
-    height: 52,
-    borderRadius: 14,
-    marginTop: 10,
-    shadowColor: '#10B981',
+    shadowColor: '#059669',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 3,
   },
   buttonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  guestButton: {
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  guestButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '600',
   },
   switchAuthRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 10,
   },
   switchAuthText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
   },
   switchAuthHighlight: {
-    fontSize: 14,
-    color: '#10B981',
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#059669',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
-    alignItems: 'center',
     padding: 24,
   },
   modalCard: {
-    width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 20,
-    gap: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 6,
   },
   modalTitle: {
     fontSize: 18,
@@ -521,30 +531,32 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   modalSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
+    marginBottom: 16,
+    lineHeight: 16,
   },
   modalInput: {
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#111827',
-    backgroundColor: '#F9FAFB',
-  },
-  modalSubmitButton: {
-    backgroundColor: '#10B981',
-    paddingVertical: 12,
     borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 46,
+    fontSize: 14,
+    backgroundColor: '#F9FAFB',
+    color: '#111827',
+  },
+  modalSubmitBtn: {
+    backgroundColor: '#059669',
+    borderRadius: 12,
+    height: 48,
     alignItems: 'center',
-    marginTop: 4,
+    justifyContent: 'center',
+    marginTop: 8,
   },
   modalSubmitText: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
   },
 });
-
