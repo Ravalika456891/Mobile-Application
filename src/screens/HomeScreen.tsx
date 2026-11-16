@@ -39,14 +39,16 @@ export const HomeScreen: React.FC = () => {
 
     if (selectedCategory === 'fruits') {
       const isFruit =
-        p.category === 'fruits-vegetables' &&
-        (p.subcategory.toLowerCase().includes('fruit') ||
-          p.tags?.some((t) => t.toLowerCase().includes('fruit')));
+        p.category === 'fruits' ||
+        (p.category === 'fruits-vegetables' &&
+          (p.subcategory.toLowerCase().includes('fruit') ||
+            p.tags?.some((t) => t.toLowerCase().includes('fruit'))));
       if (!isFruit) return false;
     } else if (selectedCategory === 'vegetables') {
       const isVeggie =
-        p.category === 'fruits-vegetables' &&
-        !p.subcategory.toLowerCase().includes('fruit');
+        p.category === 'vegetables' ||
+        (p.category === 'fruits-vegetables' &&
+          !p.subcategory.toLowerCase().includes('fruit'));
       if (!isVeggie) return false;
     } else if (selectedCategory !== 'all' && p.category !== selectedCategory) {
       return false;

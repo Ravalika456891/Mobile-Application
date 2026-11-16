@@ -1,0 +1,313 @@
+// QuickMart Fruits Catalog — 20 products
+// All prices and stock values are SAMPLE DATA, not live information.
+// Image paths are placeholders; bundled React Native images need a static require() mapping.
+
+// Product model for QuickMart fruit JSON data.
+// Prices and stock counts in quickmart_fruits.json are SAMPLE DATA only.
+
+export interface FruitProduct {
+  id: number;
+  name: string;
+  category: 'Fruits';
+  subcategory: string;
+  unit: string;
+  price: number;
+  currency: 'INR';
+  isSamplePrice: boolean;
+  // Placeholder asset path. React Native requires a static require() mapping
+  // for bundled local images; a string path cannot be passed to require().
+  image: string;
+  stock: number;
+  isSampleStock: boolean;
+  featured: boolean;
+}
+
+export const fruits: FruitProduct[] = [
+  {
+    "id": 101,
+    "name": "Apple",
+    "category": "Fruits",
+    "subcategory": "Everyday Fruits",
+    "unit": "1 kg",
+    "price": 180,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/apple.png",
+    "stock": 25,
+    "isSampleStock": true,
+    "featured": true
+  },
+  {
+    "id": 102,
+    "name": "Banana",
+    "category": "Fruits",
+    "subcategory": "Everyday Fruits",
+    "unit": "6 pcs",
+    "price": 50,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/banana.png",
+    "stock": 40,
+    "isSampleStock": true,
+    "featured": true
+  },
+  {
+    "id": 103,
+    "name": "Mango",
+    "category": "Fruits",
+    "subcategory": "Tropical Fruits",
+    "unit": "1 kg",
+    "price": 160,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/mango.png",
+    "stock": 20,
+    "isSampleStock": true,
+    "featured": true
+  },
+  {
+    "id": 104,
+    "name": "Orange",
+    "category": "Fruits",
+    "subcategory": "Citrus Fruits",
+    "unit": "1 kg",
+    "price": 120,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/orange.png",
+    "stock": 24,
+    "isSampleStock": true,
+    "featured": true
+  },
+  {
+    "id": 105,
+    "name": "Green Grapes",
+    "category": "Fruits",
+    "subcategory": "Grapes & Berries",
+    "unit": "500 g",
+    "price": 90,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/green-grapes.png",
+    "stock": 30,
+    "isSampleStock": true,
+    "featured": true
+  },
+  {
+    "id": 106,
+    "name": "Black Grapes",
+    "category": "Fruits",
+    "subcategory": "Grapes & Berries",
+    "unit": "500 g",
+    "price": 110,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/black-grapes.png",
+    "stock": 22,
+    "isSampleStock": true,
+    "featured": true
+  },
+  {
+    "id": 107,
+    "name": "Watermelon",
+    "category": "Fruits",
+    "subcategory": "Melons",
+    "unit": "1 pc",
+    "price": 75,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/watermelon.png",
+    "stock": 15,
+    "isSampleStock": true,
+    "featured": true
+  },
+  {
+    "id": 108,
+    "name": "Papaya",
+    "category": "Fruits",
+    "subcategory": "Tropical Fruits",
+    "unit": "1 pc",
+    "price": 65,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/papaya.png",
+    "stock": 18,
+    "isSampleStock": true,
+    "featured": true
+  },
+  {
+    "id": 109,
+    "name": "Pineapple",
+    "category": "Fruits",
+    "subcategory": "Tropical Fruits",
+    "unit": "1 pc",
+    "price": 90,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/pineapple.png",
+    "stock": 15,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 110,
+    "name": "Pomegranate",
+    "category": "Fruits",
+    "subcategory": "Everyday Fruits",
+    "unit": "500 g",
+    "price": 180,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/pomegranate.png",
+    "stock": 20,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 111,
+    "name": "Guava",
+    "category": "Fruits",
+    "subcategory": "Everyday Fruits",
+    "unit": "1 kg",
+    "price": 75,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/guava.png",
+    "stock": 26,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 112,
+    "name": "Strawberry",
+    "category": "Fruits",
+    "subcategory": "Grapes & Berries",
+    "unit": "200 g",
+    "price": 160,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/strawberry.png",
+    "stock": 12,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 113,
+    "name": "Kiwi",
+    "category": "Fruits",
+    "subcategory": "Premium & Imported",
+    "unit": "3 pcs",
+    "price": 150,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/kiwi.png",
+    "stock": 16,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 114,
+    "name": "Sweet Lime",
+    "category": "Fruits",
+    "subcategory": "Citrus Fruits",
+    "unit": "1 kg",
+    "price": 100,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/sweet-lime.png",
+    "stock": 22,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 115,
+    "name": "Coconut",
+    "category": "Fruits",
+    "subcategory": "Tropical Fruits",
+    "unit": "1 pc",
+    "price": 55,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/coconut.png",
+    "stock": 30,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 116,
+    "name": "Muskmelon",
+    "category": "Fruits",
+    "subcategory": "Melons",
+    "unit": "1 pc",
+    "price": 70,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/muskmelon.png",
+    "stock": 14,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 117,
+    "name": "Sapota",
+    "category": "Fruits",
+    "subcategory": "Tropical Fruits",
+    "unit": "500 g",
+    "price": 90,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/sapota.png",
+    "stock": 18,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 118,
+    "name": "Custard Apple",
+    "category": "Fruits",
+    "subcategory": "Seasonal Fruits",
+    "unit": "500 g",
+    "price": 120,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/custard-apple.png",
+    "stock": 12,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 119,
+    "name": "Dragon Fruit",
+    "category": "Fruits",
+    "subcategory": "Premium & Imported",
+    "unit": "1 pc",
+    "price": 110,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/dragon-fruit.png",
+    "stock": 10,
+    "isSampleStock": true,
+    "featured": false
+  },
+  {
+    "id": 120,
+    "name": "Pear",
+    "category": "Fruits",
+    "subcategory": "Premium & Imported",
+    "unit": "500 g",
+    "price": 170,
+    "currency": "INR",
+    "isSamplePrice": true,
+    "image": "assets/images/fruits/pear.png",
+    "stock": 18,
+    "isSampleStock": true,
+    "featured": false
+  }
+];
+
+export const popularFruits = fruits.filter(fruit => fruit.featured);
+
+export function searchFruits(query: string): FruitProduct[] {
+  const normalized = query.trim().toLowerCase();
+  return fruits.filter(fruit => fruit.name.toLowerCase().includes(normalized));
+}
