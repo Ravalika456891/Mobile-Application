@@ -240,14 +240,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const placeOrder = (paymentMethod: string, tipAmount: number) => {
+    const discountVal = appliedCoupon
+      ? Math.min((cartSubtotal * appliedCoupon.discountPercentage) / 100, appliedCoupon.maxDiscount)
+      : 0;
     const newOrder: Order = {
       id: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
       items: [...cart],
-      total: cartTotal + tipAmount,
+      total: Math.max(0, cartSubtotal - discountVal) + 15 + tipAmount,
+      subtotal: cartSubtotal,
+      deliveryFee: 15,
+      discount: discountVal,
+      tip: tipAmount,
+      status: 'CONFIRMED',
       stage: 'CONFIRMED',
       estimatedDeliveryMins: 10,
+      remainingSeconds: 600,
       createdAt: new Date(),
       deliveryAddress: selectedAddress,
+      rider: {
+        name: 'Vikram Singh',
+        phone: '+91 98765 43210',
+        rating: 4.9,
+        vehicle: 'Electric Superbike',
+        vehicleNumber: 'MH 02 EQ 8812',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+        currentLatProgress: 0.15,
+      },
       riderName: 'Vikram Singh',
       riderPhone: '+91 98765 43210',
       paymentMethod,
@@ -266,10 +284,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const simulateNextStage = () => {
     if (!activeOrder) return;
-    const currentIndex = ORDER_STAGES.indexOf(activeOrder.stage);
-    if (currentIndex < ORDER_STAGES.length - 1) {
+    const currentStage = (activeOrder.stage || activeOrder.status) as OrderStage;
+    const currentIndex = ORDER_STAGES.indexOf(currentStage);
+    if (currentIndex >= 0 && currentIndex < ORDER_STAGES.length - 1) {
       const nextStage = ORDER_STAGES[currentIndex + 1];
-      setActiveOrder({ ...activeOrder, stage: nextStage });
+      setActiveOrder({ ...activeOrder, stage: nextStage, status: nextStage });
       showToast(`Order status updated: ${nextStage.replace(/_/g, ' ')}`);
     } else {
       showToast('Order already delivered!');

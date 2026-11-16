@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 import { CATEGORIES } from '../data/products';
 import { useApp } from '../context/AppContext';
 import { CategoryId } from '../types';
@@ -25,20 +25,23 @@ export const CategoryBar: React.FC = () => {
                 isSelected && styles.categoryCardSelected,
               ]}
               onPress={() => setSelectedCategory(cat.id as CategoryId)}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
             >
               <View
                 style={[
                   styles.iconCircle,
-                  { backgroundColor: isSelected ? '#10B981' : '#F3F4F6' },
+                  isSelected
+                    ? styles.iconCircleSelected
+                    : { backgroundColor: isSelected ? '#059669' : '#F3F4F6' },
                 ]}
               >
-                <Ionicons
-                  name={cat.icon as any}
-                  size={18}
+                <Icon
+                  name={cat.icon}
+                  size={15}
                   color={isSelected ? '#FFFFFF' : '#4B5563'}
                 />
               </View>
+
               <Text
                 style={[
                   styles.categoryName,
@@ -48,31 +51,36 @@ export const CategoryBar: React.FC = () => {
               >
                 {cat.name}
               </Text>
+
               {cat.badge && (
                 <View
                   style={[
                     styles.badge,
-                    {
-                      backgroundColor:
-                        cat.id === 'icecreams'
-                          ? '#FCE7F3'
-                          : cat.id === 'vegetables'
-                          ? '#D1FAE5'
-                          : '#EDE9FE',
-                    },
+                    isSelected
+                      ? styles.badgeSelected
+                      : {
+                          backgroundColor:
+                            cat.badge === 'Fresh'
+                              ? '#D1FAE5'
+                              : cat.badge === 'Organic'
+                              ? '#DCFCE7'
+                              : '#FEF3C7',
+                        },
                   ]}
                 >
                   <Text
                     style={[
                       styles.badgeText,
-                      {
-                        color:
-                          cat.id === 'icecreams'
-                            ? '#BE185D'
-                            : cat.id === 'vegetables'
-                            ? '#065F46'
-                            : '#6D28D9',
-                      },
+                      isSelected
+                        ? styles.badgeTextSelected
+                        : {
+                            color:
+                              cat.badge === 'Fresh'
+                                ? '#065F46'
+                                : cat.badge === 'Organic'
+                                ? '#166534'
+                                : '#92400E',
+                          },
                     ]}
                   >
                     {cat.badge}
@@ -103,41 +111,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 7,
     paddingHorizontal: 12,
-    borderRadius: 24,
+    borderRadius: 20,
     backgroundColor: '#F9FAFB',
-    borderWidth: 1,
+    borderWidth: 1.2,
     borderColor: '#E5E7EB',
   },
   categoryCardSelected: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#10B981',
+    backgroundColor: '#059669',
+    borderColor: '#059669',
   },
   iconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 7,
+  },
+  iconCircleSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
   categoryName: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#374151',
   },
   categoryNameSelected: {
-    color: '#065F46',
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   badge: {
     marginLeft: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 6,
+  },
+  badgeSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   badgeText: {
     fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontWeight: '800',
+  },
+  badgeTextSelected: {
+    color: '#FFFFFF',
   },
 });

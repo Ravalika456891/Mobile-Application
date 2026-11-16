@@ -1,14 +1,16 @@
 export type CategoryId = 
   | 'all'
   | 'fruits-vegetables'
+  | 'fruits'
+  | 'vegetables'
   | 'dairy'
+  | 'bakery'
   | 'rice-grains'
   | 'snacks'
   | 'beverages'
   | 'cooking-essentials'
   | 'household'
   | 'personal-care'
-  | 'vegetables'
   | 'groceries'
   | 'icecreams'
   | 'clothing'
@@ -80,9 +82,12 @@ export interface Order {
   tip: number;
   total: number;
   status: OrderStage;
+  stage?: OrderStage;
   estimatedDeliveryMins: number;
   remainingSeconds: number;
   rider: RiderInfo;
+  riderName?: string;
+  riderPhone?: string;
   deliveryAddress: string;
   paymentMethod: string;
 }

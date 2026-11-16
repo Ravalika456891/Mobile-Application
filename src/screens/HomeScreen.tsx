@@ -6,21 +6,29 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../components/Icon';
 import { useApp } from '../context/AppContext';
 import { CategoryBar } from '../components/CategoryBar';
 import { BannerCarousel } from '../components/BannerCarousel';
 import { ProductCard } from '../components/ProductCard';
 
 export const HomeScreen: React.FC = () => {
-  const { products, selectedCategory, searchQuery, setSelectedCategory, currentUser } = useApp();
+  const {
+    products,
+    selectedCategory,
+    searchQuery,
+    setSearchQuery,
+    setSelectedCategory,
+    setActiveTab,
+  } = useApp();
+
   const [filterVegOnly, setFilterVegOnly] = useState(false);
   const [filterFastDelivery, setFilterFastDelivery] = useState(false);
 
-  // Filter products based on search, selected category, and active filters
+  const isSearching = searchQuery.trim().length > 0;
+
   const filteredProducts = products.filter((p) => {
-    // Search match
-    if (searchQuery.trim().length > 0) {
+    if (isSearching) {
       const q = searchQuery.toLowerCase();
       const matchName = p.name.toLowerCase().includes(q);
       const matchDesc = p.description.toLowerCase().includes(q);
@@ -29,17 +37,25 @@ export const HomeScreen: React.FC = () => {
       if (!matchName && !matchDesc && !matchSub && !matchTags) return false;
     }
 
-    // Category match
-    if (selectedCategory !== 'all' && p.category !== selectedCategory) {
+    if (selectedCategory === 'fruits') {
+      const isFruit =
+        p.category === 'fruits-vegetables' &&
+        (p.subcategory.toLowerCase().includes('fruit') ||
+          p.tags?.some((t) => t.toLowerCase().includes('fruit')));
+      if (!isFruit) return false;
+    } else if (selectedCategory === 'vegetables') {
+      const isVeggie =
+        p.category === 'fruits-vegetables' &&
+        !p.subcategory.toLowerCase().includes('fruit');
+      if (!isVeggie) return false;
+    } else if (selectedCategory !== 'all' && p.category !== selectedCategory) {
       return false;
     }
 
-    // Veg filter
     if (filterVegOnly && !p.isVeg) {
       return false;
     }
 
-    // Fast delivery (< 10 mins)
     if (filterFastDelivery && p.deliveryTimeMins > 10) {
       return false;
     }
@@ -47,8 +63,37 @@ export const HomeScreen: React.FC = () => {
     return true;
   });
 
-  const featuredProducts = products.filter((p) => p.tags?.includes('Best Seller') || p.rating >= 4.9);
-  const popularProducts = products.filter((p) => p.reviewsCount > 300);
+  // Recommended Products: Top rated products (>= 4.8)
+  const recommendedProducts = products.filter((p) => p.rating >= 4.8).slice(0, 8);
+
+  const getCategoryTitle = () => {
+    switch (selectedCategory) {
+      case 'all':
+        return 'Popular Groceries';
+      case 'fruits':
+        return 'Fresh Farm Fruits';
+      case 'vegetables':
+        return 'Organic Vegetables & Greens';
+      case 'dairy':
+        return 'Dairy, Milk & Farm Eggs';
+      case 'bakery':
+        return 'Fresh Artisan Bakery & Breads';
+      case 'snacks':
+        return 'Snacks, Chips & Munchies';
+      case 'beverages':
+        return 'Beverages & Cold Pressed Juices';
+      case 'rice-grains':
+        return 'Rice, Pulses & Whole Grains';
+      case 'cooking-essentials':
+        return 'Cooking Oils, Ghee & Spices';
+      case 'household':
+        return 'Household Cleaning Essentials';
+      case 'personal-care':
+        return 'Personal Care & Hygiene';
+      default:
+        return 'Superfast Delivery Catalog';
+    }
+  };
 
   return (
     <ScrollView
@@ -56,19 +101,20 @@ export const HomeScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.content}
     >
-      {/* Category Strip */}
+      {/* Category Pills Bar */}
       <CategoryBar />
 
-      {/* Hero Promo Banner Carousel (hide if searching) */}
-      {!searchQuery && <BannerCarousel />}
+      {/* Promotional Banners Section (hidden while searching to focus on search results) */}
+      {!isSearching && <BannerCarousel />}
 
-      {/* Filter Chips Bar */}
+      {/* Quick Filter Bar */}
       <View style={styles.filterBar}>
         <TouchableOpacity
           style={[styles.filterChip, filterFastDelivery && styles.filterChipActive]}
           onPress={() => setFilterFastDelivery(!filterFastDelivery)}
+          activeOpacity={0.75}
         >
-          <Ionicons
+          <Icon
             name="flash"
             size={13}
             color={filterFastDelivery ? '#FFFFFF' : '#059669'}
@@ -86,8 +132,9 @@ export const HomeScreen: React.FC = () => {
         <TouchableOpacity
           style={[styles.filterChip, filterVegOnly && styles.filterChipActive]}
           onPress={() => setFilterVegOnly(!filterVegOnly)}
+          activeOpacity={0.75}
         >
-          <Ionicons
+          <Icon
             name="leaf"
             size={13}
             color={filterVegOnly ? '#FFFFFF' : '#10B981'}
@@ -98,45 +145,106 @@ export const HomeScreen: React.FC = () => {
               filterVegOnly && styles.filterChipTextActive,
             ]}
           >
-            100% Vegetarian
+            Vegetarian
           </Text>
         </TouchableOpacity>
 
-        {selectedCategory !== 'all' && (
+        {(selectedCategory !== 'all' || filterVegOnly || filterFastDelivery) && (
           <TouchableOpacity
             style={styles.clearFilterChip}
-            onPress={() => setSelectedCategory('all')}
+            onPress={() => {
+              setSelectedCategory('all');
+              setFilterVegOnly(false);
+              setFilterFastDelivery(false);
+            }}
+            activeOpacity={0.7}
           >
-            <Text style={styles.clearFilterText}>All Categories</Text>
-            <Ionicons name="close-circle" size={13} color="#6B7280" />
+            <Text style={styles.clearFilterText}>Reset Filters</Text>
+            <Icon name="close-circle" size={13} color="#6B7280" />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Main Catalog or Search Results */}
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>
-            {selectedCategory === 'all'
-              ? searchQuery
-                ? `Results for "${searchQuery}"`
-                : 'All Fresh Groceries'
-              : `${selectedCategory.replace(/-/g, ' ').toUpperCase()} COLLECTION`}
+      {/* Recommended Products Horizontal Section (Step 2 - F) */}
+      {!isSearching && selectedCategory === 'all' && (
+        <View style={styles.recommendedSection}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionTitleCol}>
+              <View style={styles.titleBadgeRow}>
+                <Icon name="star" size={15} color="#F59E0B" />
+                <Text style={styles.sectionHeading}>Recommended For You</Text>
+              </View>
+              <Text style={styles.sectionSubheading}>
+                Top-rated customer favorites delivered in 10 mins
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.viewAllBtn}
+              onPress={() => setActiveTab('categories')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.viewAllText}>View All</Text>
+              <Icon name="chevron-forward" size={12} color="#059669" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalListContent}
+          >
+            {recommendedProducts.map((product) => (
+              <ProductCard
+                key={`rec-${product.id}`}
+                product={product}
+                customWidth={165}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Section Header: Popular Products / Catalog */}
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.sectionTitleCol}>
+          <Text style={styles.sectionHeading}>
+            {isSearching ? `Results for "${searchQuery}"` : getCategoryTitle()}
           </Text>
-          <Text style={styles.sectionSubtitle}>
-            {filteredProducts.length} items in stock • 10-min delivery
+          <Text style={styles.sectionSubheading}>
+            {filteredProducts.length} items available in stock
           </Text>
         </View>
+
+        {isSearching && (
+          <TouchableOpacity
+            style={styles.clearSearchBtn}
+            onPress={() => setSearchQuery('')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.clearSearchText}>Clear Search</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Product Grid */}
+      {/* Product Grid or No-Results Empty State */}
       {filteredProducts.length === 0 ? (
         <View style={styles.emptyResults}>
-          <Ionicons name="search-outline" size={48} color="#9CA3AF" />
-          <Text style={styles.emptyTitle}>No matching groceries found</Text>
+          <View style={styles.emptyIconCircle}>
+            <Icon name="search-outline" size={32} color="#9CA3AF" />
+          </View>
+          <Text style={styles.emptyTitle}>No matching products found</Text>
           <Text style={styles.emptySub}>
-            Try searching for tomatoes, milk, eggs, rice, olive oil, or chips
+            We couldn't find anything matching your search. Try searching for milk, tomatoes, bread, or basmati rice.
           </Text>
+          {isSearching && (
+            <TouchableOpacity
+              style={styles.resetSearchButton}
+              onPress={() => setSearchQuery('')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.resetSearchButtonText}>Clear Search & View All</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <View style={styles.gridContainer}>
@@ -146,41 +254,22 @@ export const HomeScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Featured Products Section (when browsing all items) */}
-      {!searchQuery && selectedCategory === 'all' && (
-        <View style={styles.featuredSection}>
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>⭐ Featured Top Picks</Text>
-              <Text style={styles.sectionSubtitle}>Highly rated by MyGroceries customers</Text>
-            </View>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-            {featuredProducts.slice(0, 5).map((product) => (
-              <View key={'feat-' + product.id} style={{ width: 180 }}>
-                <ProductCard product={product} />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Features Trust Strip */}
+      {/* Trust & Quality Assurance Strip */}
       <View style={styles.trustStrip}>
         <View style={styles.trustItem}>
-          <Ionicons name="time" size={24} color="#10B981" />
+          <Icon name="time" size={22} color="#10B981" />
           <Text style={styles.trustTitle}>10-Min Delivery</Text>
-          <Text style={styles.trustDesc}>Local dark store hubs</Text>
+          <Text style={styles.trustDesc}>From local dark stores</Text>
         </View>
         <View style={styles.trustItem}>
-          <Ionicons name="shield-checkmark" size={24} color="#3B82F6" />
-          <Text style={styles.trustTitle}>Quality Assured</Text>
-          <Text style={styles.trustDesc}>Fresh or 100% refund</Text>
+          <Icon name="shield-checkmark" size={22} color="#3B82F6" />
+          <Text style={styles.trustTitle}>Best Quality</Text>
+          <Text style={styles.trustDesc}>Farm fresh & verified</Text>
         </View>
         <View style={styles.trustItem}>
-          <Ionicons name="pricetag" size={24} color="#F59E0B" />
-          <Text style={styles.trustTitle}>Wholesale Prices</Text>
-          <Text style={styles.trustDesc}>Direct from farms</Text>
+          <Icon name="snow" size={22} color="#EC4899" />
+          <Text style={styles.trustTitle}>Cold Chain</Text>
+          <Text style={styles.trustDesc}>Chilled dairy & ice creams</Text>
         </View>
       </View>
     </ScrollView>
@@ -190,28 +279,28 @@ export const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8FAF9',
   },
   content: {
-    paddingBottom: 24,
+    paddingBottom: 90,
   },
   filterBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     gap: 8,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 1.2,
     borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 5,
   },
   filterChipActive: {
     backgroundColor: '#059669',
@@ -219,46 +308,85 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 12,
+    fontWeight: '700',
     color: '#374151',
-    fontWeight: '600',
   },
   filterChipTextActive: {
     color: '#FFFFFF',
-    fontWeight: '700',
   },
   clearFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
     backgroundColor: '#F3F4F6',
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: 20,
+    gap: 4,
     marginLeft: 'auto',
   },
   clearFilterText: {
     fontSize: 11,
-    color: '#4B5563',
     fontWeight: '600',
+    color: '#4B5563',
   },
-  sectionHeader: {
+  recommendedSection: {
+    marginBottom: 8,
+  },
+  sectionHeaderRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 10,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 10,
   },
-  sectionTitle: {
-    fontSize: 18,
+  sectionTitleCol: {
+    flex: 1,
+  },
+  titleBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sectionHeading: {
+    fontSize: 17,
     fontWeight: '800',
     color: '#111827',
-    letterSpacing: -0.3,
   },
-  sectionSubtitle: {
+  sectionSubheading: {
     fontSize: 12,
     color: '#6B7280',
     marginTop: 2,
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 2,
+  },
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  clearSearchBtn: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  clearSearchText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  horizontalListContent: {
+    paddingHorizontal: 12,
+    gap: 10,
+    paddingBottom: 8,
   },
   gridContainer: {
     flexDirection: 'row',
@@ -266,59 +394,70 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 10,
   },
-  horizontalScroll: {
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  featuredSection: {
-    marginTop: 16,
-  },
   emptyResults: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
+    paddingVertical: 40,
     paddingHorizontal: 24,
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#374151',
-    marginTop: 12,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginBottom: 6,
   },
   emptySub: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#6B7280',
     textAlign: 'center',
-    marginTop: 4,
-    maxWidth: 260,
+    lineHeight: 18,
+    marginBottom: 18,
+  },
+  resetSearchButton: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  resetSearchButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   trustStrip: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
+    marginHorizontal: 14,
     marginTop: 24,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
     borderRadius: 16,
+    paddingVertical: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
   },
   trustItem: {
-    flex: 1,
     alignItems: 'center',
-    paddingHorizontal: 4,
+    maxWidth: 95,
   },
   trustTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
     color: '#1F2937',
     marginTop: 6,
     textAlign: 'center',
   },
   trustDesc: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#6B7280',
-    textAlign: 'center',
     marginTop: 2,
+    textAlign: 'center',
   },
 });

@@ -4,6 +4,7 @@ import { AppProvider, useApp } from './src/context/AppContext';
 import { Header } from './src/components/Header';
 import { BottomNav } from './src/components/BottomNav';
 import { Toast } from './src/components/Toast';
+import { CartSummaryBar } from './src/components/CartSummaryBar';
 import { ProductDetailModal } from './src/components/ProductDetailModal';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
@@ -68,7 +69,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 const MainNavigator: React.FC = () => {
-  const { activeTab, authScreen } = useApp();
+  const { activeTab, authScreen, cartCount } = useApp();
 
   if (authScreen === 'login') {
     return (
@@ -115,6 +116,9 @@ const MainNavigator: React.FC = () => {
       {activeTab !== 'cart' && <Header />}
 
       <View style={styles.body}>{renderCurrentScreen()}</View>
+
+      {/* Floating Compact Cart Summary Bar */}
+      {cartCount > 0 && activeTab !== 'cart' && <CartSummaryBar />}
 
       <BottomNav />
 
