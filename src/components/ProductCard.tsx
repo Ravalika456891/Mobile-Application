@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 import { Product } from '../types';
 import { useApp } from '../context/AppContext';
 
@@ -58,7 +58,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Delivery Time Badge */}
         <View style={styles.deliveryBadge}>
-          <Ionicons name="flash" size={10} color="#065F46" />
+          <Icon name="flash" size={10} color="#065F46" />
           <Text style={styles.deliveryBadgeText}>
             {product.deliveryTimeMins}m
           </Text>
@@ -80,7 +80,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons
+          <Icon
             name={isFavorite ? 'heart' : 'heart-outline'}
             size={16}
             color={isFavorite ? '#EF4444' : '#64748B'}
@@ -122,7 +122,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Rating Row */}
         <View style={styles.ratingRow}>
-          <Ionicons name="star" size={12} color="#F59E0B" />
+          <Icon name="star" size={12} color="#F59E0B" />
           <Text style={styles.ratingText}>{product.rating}</Text>
           <Text style={styles.reviewsText}>({product.reviewsCount})</Text>
         </View>
@@ -149,7 +149,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               activeOpacity={0.8}
             >
               <Text style={styles.addButtonText}>ADD</Text>
-              <Ionicons name="add" size={13} color="#059669" />
+              <Icon name="add" size={13} color="#059669" />
             </TouchableOpacity>
           ) : (
             <View style={styles.qtyCounter}>
@@ -160,7 +160,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   removeFromCart(product.id);
                 }}
               >
-                <Ionicons name="remove" size={13} color="#FFFFFF" />
+                <Icon name="remove" size={13} color="#FFFFFF" />
               </TouchableOpacity>
               <Text style={styles.qtyText}>{quantity}</Text>
               <TouchableOpacity
@@ -170,7 +170,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   addToCart(product);
                 }}
               >
-                <Ionicons name="add" size={13} color="#FFFFFF" />
+                <Icon name="add" size={13} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
           )}

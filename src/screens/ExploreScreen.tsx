@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../components/Icon';
 import { useApp } from '../context/AppContext';
 import { CATEGORIES } from '../data/products';
 import { CategoryId } from '../types';
@@ -55,9 +55,9 @@ export const ExploreScreen: React.FC = () => {
               activeOpacity={0.88}
             >
               <View style={[styles.cardHeader, { backgroundColor: cat.color }]}>
-                <Ionicons name={cat.icon as any} size={28} color="#FFFFFF" />
+                <Icon name={cat.icon} size={24} color="#FFFFFF" />
                 <View style={styles.speedPill}>
-                  <Ionicons name="flash" size={10} color="#FFFFFF" />
+                  <Icon name="flash" size={10} color="#FFFFFF" />
                   <Text style={styles.speedText}>{stats.speed}</Text>
                 </View>
               </View>

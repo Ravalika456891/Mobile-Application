@@ -9,7 +9,7 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 import { useApp } from '../context/AppContext';
 
 export const ProductDetailModal: React.FC = () => {
@@ -51,16 +51,16 @@ export const ProductDetailModal: React.FC = () => {
               style={styles.closeBtn}
               onPress={() => setSelectedProduct(null)}
             >
-              <Ionicons name="close" size={22} color="#374151" />
+              <Icon name="close" size={20} color="#374151" />
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.favBtn}
               onPress={() => toggleWishlist(selectedProduct.id)}
             >
-              <Ionicons
+              <Icon
                 name={isFavorite ? 'heart' : 'heart-outline'}
-                size={22}
+                size={20}
                 color={isFavorite ? '#EF4444' : '#4B5563'}
               />
             </TouchableOpacity>
@@ -78,7 +78,7 @@ export const ProductDetailModal: React.FC = () => {
                 resizeMode="cover"
               />
               <View style={styles.deliveryBadge}>
-                <Ionicons name="flash" size={13} color="#FFF" />
+                <Icon name="flash" size={13} color="#FFF" />
                 <Text style={styles.deliveryBadgeText}>
                   Lightning {selectedProduct.deliveryTimeMins} Mins Delivery
                 </Text>
@@ -102,7 +102,7 @@ export const ProductDetailModal: React.FC = () => {
             {/* Rating & Stock */}
             <View style={styles.statsRow}>
               <View style={styles.ratingBadge}>
-                <Ionicons name="star" size={14} color="#F59E0B" />
+                <Icon name="star" size={14} color="#F59E0B" />
                 <Text style={styles.ratingValue}>{selectedProduct.rating}</Text>
                 <Text style={styles.reviewCount}>
                   ({selectedProduct.reviewsCount} reviews)
@@ -141,15 +141,15 @@ export const ProductDetailModal: React.FC = () => {
             {/* Guarantees Box */}
             <View style={styles.guaranteeBox}>
               <View style={styles.guaranteeItem}>
-                <Ionicons name="shield-checkmark" size={20} color="#10B981" />
+                <Icon name="shield-checkmark" size={18} color="#10B981" />
                 <Text style={styles.guaranteeLabel}>100% Quality Assured</Text>
               </View>
               <View style={styles.guaranteeItem}>
-                <Ionicons name="snow" size={20} color="#06B6D4" />
+                <Icon name="snow" size={18} color="#06B6D4" />
                 <Text style={styles.guaranteeLabel}>Cold Chain Delivered</Text>
               </View>
               <View style={styles.guaranteeItem}>
-                <Ionicons name="refresh" size={20} color="#8B5CF6" />
+                <Icon name="refresh" size={18} color="#8B5CF6" />
                 <Text style={styles.guaranteeLabel}>Instant Return at Door</Text>
               </View>
             </View>
@@ -170,7 +170,7 @@ export const ProductDetailModal: React.FC = () => {
                 onPress={() => addToCart(selectedProduct)}
                 activeOpacity={0.85}
               >
-                <Ionicons name="cart" size={18} color="#FFF" />
+                <Icon name="cart" size={17} color="#FFF" />
                 <Text style={styles.addCartBtnText}>Add To Cart</Text>
               </TouchableOpacity>
             ) : (
@@ -179,14 +179,14 @@ export const ProductDetailModal: React.FC = () => {
                   style={styles.counterBtn}
                   onPress={() => removeFromCart(selectedProduct.id)}
                 >
-                  <Ionicons name="remove" size={18} color="#FFF" />
+                  <Icon name="remove" size={17} color="#FFF" />
                 </TouchableOpacity>
                 <Text style={styles.counterQty}>{quantity}</Text>
                 <TouchableOpacity
                   style={styles.counterBtn}
                   onPress={() => addToCart(selectedProduct)}
                 >
-                  <Ionicons name="add" size={18} color="#FFF" />
+                  <Icon name="add" size={17} color="#FFF" />
                 </TouchableOpacity>
               </View>
             )}

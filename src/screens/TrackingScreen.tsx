@@ -7,9 +7,8 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-  Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../components/Icon';
 import { useApp } from '../context/AppContext';
 import { OrderStage } from '../types';
 
@@ -26,10 +25,9 @@ export const TrackingScreen: React.FC = () => {
   } = useApp();
 
   const handleStartDemoOrder = () => {
-    // Add 3 sample items to cart and place order
-    addToCart(products[0]); // Tomato
-    addToCart(products[5]); // Ice cream
-    addToCart(products[9]); // Truffle chips
+    addToCart(products[0]);
+    addToCart(products[5]);
+    addToCart(products[9]);
     setTimeout(() => {
       placeOrder('Apple Pay / GPay', 2.0);
     }, 100);
@@ -39,7 +37,7 @@ export const TrackingScreen: React.FC = () => {
     return (
       <View style={styles.emptyContainer}>
         <View style={styles.emptyIconCircle}>
-          <Ionicons name="bicycle-outline" size={54} color="#10B981" />
+          <Icon name="bicycle" size={54} color="#10B981" />
         </View>
         <Text style={styles.emptyTitle}>No Live Deliveries</Text>
         <Text style={styles.emptySubtitle}>
@@ -50,7 +48,7 @@ export const TrackingScreen: React.FC = () => {
           onPress={handleStartDemoOrder}
           activeOpacity={0.85}
         >
-          <Ionicons name="flash" size={18} color="#FFF" />
+          <Icon name="flash" size={18} color="#FFF" />
           <Text style={styles.demoOrderBtnText}>Launch Live Demo Order</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -145,13 +143,13 @@ export const TrackingScreen: React.FC = () => {
       case 'DELIVERED':
         return {
           title: 'Order Delivered! 🎉',
-          subtitle: 'Delivered fast. Thank you for choosing MyGroceries!',
+          subtitle: 'Delivered in 10 minutes. Thank you for choosing MyGroceries!',
           color: '#10B981',
         };
       default:
         return {
           title: 'Order in Progress',
-          subtitle: 'Your fresh groceries are being handled with care',
+          subtitle: 'Your groceries are on the way',
           color: '#10B981',
         };
     }
@@ -181,11 +179,10 @@ export const TrackingScreen: React.FC = () => {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Top Real-time Header */}
       <View style={[styles.statusHero, { borderColor: stageHeader.color }]}>
         <View style={styles.timerRow}>
           <View style={styles.etaBadge}>
-            <Ionicons name="time" size={16} color="#10B981" />
+            <Icon name="time" size={16} color="#10B981" />
             <Text style={styles.etaText}>ESTIMATED TIME</Text>
           </View>
           <Text style={styles.countdown}>
@@ -200,11 +197,10 @@ export const TrackingScreen: React.FC = () => {
         <Text style={styles.orderIdBadge}>Order #{activeOrder.id}</Text>
       </View>
 
-      {/* Interactive Map Simulation View */}
       <View style={styles.mapCard}>
         <View style={styles.mapHeader}>
           <View style={styles.mapTitleRow}>
-            <Ionicons name="map" size={16} color="#10B981" />
+            <Icon name="location" size={16} color="#10B981" />
             <Text style={styles.mapTitle}>Real-Time GPS Route</Text>
           </View>
           <View style={styles.liveLiveDot}>
@@ -213,17 +209,14 @@ export const TrackingScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Road Track Illustration */}
         <View style={styles.roadContainer}>
-          {/* Store Pin */}
           <View style={styles.locationPin}>
             <View style={[styles.pinCircle, { backgroundColor: '#4F46E5' }]}>
-              <Ionicons name="business" size={16} color="#FFF" />
+              <Icon name="business" size={16} color="#FFF" />
             </View>
             <Text style={styles.pinLabel}>Dark Store</Text>
           </View>
 
-          {/* Road Line with Moving Rider */}
           <View style={styles.trackLine}>
             <View
               style={[
@@ -236,7 +229,6 @@ export const TrackingScreen: React.FC = () => {
                 },
               ]}
             />
-            {/* Scooter Icon positioned along route */}
             <View
               style={[
                 styles.scooterMarker,
@@ -248,27 +240,25 @@ export const TrackingScreen: React.FC = () => {
                 },
               ]}
             >
-              <Ionicons name="bicycle" size={18} color="#FFFFFF" />
+              <Icon name="bicycle" size={16} color="#FFFFFF" />
             </View>
           </View>
 
-          {/* User Home Pin */}
           <View style={styles.locationPin}>
             <View style={[styles.pinCircle, { backgroundColor: '#10B981' }]}>
-              <Ionicons name="home" size={16} color="#FFF" />
+              <Icon name="home" size={16} color="#FFF" />
             </View>
             <Text style={styles.pinLabel}>Your Door</Text>
           </View>
         </View>
 
-        {/* Simulation Fast-forward Helper */}
         {activeOrder.status !== 'DELIVERED' && (
           <TouchableOpacity
             style={styles.simulateBtn}
             onPress={simulateNextStage}
             activeOpacity={0.8}
           >
-            <Ionicons name="play-forward" size={16} color="#047857" />
+            <Icon name="play-forward" size={15} color="#047857" />
             <Text style={styles.simulateBtnText}>
               Fast-Forward Next Step (Demo Test)
             </Text>
@@ -276,7 +266,6 @@ export const TrackingScreen: React.FC = () => {
         )}
       </View>
 
-      {/* Delivery Partner Card */}
       <View style={styles.riderCard}>
         <Image source={{ uri: activeOrder.rider.avatar }} style={styles.riderAvatar} />
         <View style={styles.riderInfo}>
@@ -285,7 +274,7 @@ export const TrackingScreen: React.FC = () => {
             {activeOrder.rider.vehicle} • {activeOrder.rider.vehicleNumber}
           </Text>
           <View style={styles.riderRating}>
-            <Ionicons name="star" size={12} color="#F59E0B" />
+            <Icon name="star" size={12} color="#F59E0B" />
             <Text style={styles.riderRatingText}>{activeOrder.rider.rating} Rating</Text>
             <Text style={styles.vaccinatedBadge}>• Vaccinated & Masked</Text>
           </View>
@@ -297,19 +286,18 @@ export const TrackingScreen: React.FC = () => {
             onPress={handleCallRider}
             activeOpacity={0.7}
           >
-            <Ionicons name="call" size={18} color="#10B981" />
+            <Icon name="call" size={16} color="#10B981" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionCircle}
             onPress={handleMessageRider}
             activeOpacity={0.7}
           >
-            <Ionicons name="chatbubble" size={18} color="#3B82F6" />
+            <Icon name="chatbubble" size={16} color="#3B82F6" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Timeline Steps */}
       <View style={styles.timelineCard}>
         <Text style={styles.timelineHeading}>Delivery Milestones</Text>
         {STAGES.map((s, idx) => {
@@ -318,7 +306,6 @@ export const TrackingScreen: React.FC = () => {
 
           return (
             <View key={s.stage} style={styles.timelineRow}>
-              {/* Left Step Indicator */}
               <View style={styles.timelineLeftCol}>
                 <View
                   style={[
@@ -327,9 +314,9 @@ export const TrackingScreen: React.FC = () => {
                     isCurrent && styles.stepDotCurrent,
                   ]}
                 >
-                  <Ionicons
-                    name={isDone ? (s.icon as any) : 'ellipse-outline'}
-                    size={14}
+                  <Icon
+                    name={isDone ? s.icon : 'ellipse-outline'}
+                    size={12}
                     color={isDone ? '#FFF' : '#9CA3AF'}
                   />
                 </View>
@@ -343,7 +330,6 @@ export const TrackingScreen: React.FC = () => {
                 )}
               </View>
 
-              {/* Step Info */}
               <View style={styles.timelineRightCol}>
                 <Text
                   style={[
@@ -361,7 +347,6 @@ export const TrackingScreen: React.FC = () => {
         })}
       </View>
 
-      {/* Ordered Items Preview */}
       <View style={styles.itemsCard}>
         <Text style={styles.itemsCardTitle}>
           Items in this Order ({activeOrder.items.length})
@@ -383,7 +368,6 @@ export const TrackingScreen: React.FC = () => {
           </View>
         ))}
 
-        {/* Bill Summary */}
         <View style={styles.billDivider} />
         <View style={styles.billRow}>
           <Text style={styles.billLabel}>Total Paid ({activeOrder.paymentMethod})</Text>
@@ -391,16 +375,14 @@ export const TrackingScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Delivery Address Box */}
       <View style={styles.addressBox}>
-        <Ionicons name="location-outline" size={20} color="#10B981" />
+        <Icon name="location-outline" size={18} color="#10B981" />
         <View style={styles.addressInfo}>
           <Text style={styles.addressHeading}>Delivery Address</Text>
           <Text style={styles.addressValue}>{activeOrder.deliveryAddress}</Text>
         </View>
       </View>
 
-      {/* Cancel Button if not yet delivered */}
       {activeOrder.status !== 'DELIVERED' && (
         <TouchableOpacity
           style={styles.cancelBtn}

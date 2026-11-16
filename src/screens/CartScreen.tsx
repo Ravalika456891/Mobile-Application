@@ -9,7 +9,7 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../components/Icon';
 import { useApp } from '../context/AppContext';
 import { AVAILABLE_COUPONS } from '../data/products';
 
@@ -20,7 +20,6 @@ export const CartScreen: React.FC = () => {
     cartTotal,
     addToCart,
     removeFromCart,
-    deleteFromCart,
     appliedCoupon,
     applyCoupon,
     removeCoupon,
@@ -54,17 +53,17 @@ export const CartScreen: React.FC = () => {
   ];
 
   const paymentOptions = [
-    { id: 'UPI', name: 'Instant UPI (GPay / PhonePe / Paytm)', icon: 'flash-outline' },
+    { id: 'UPI', name: 'Instant UPI (GPay / PhonePe / Paytm)', icon: 'flash' },
     { id: 'Card', name: 'Credit / Debit Card', icon: 'card-outline' },
-    { id: 'COD', name: 'Cash on Delivery', icon: 'cash-outline' },
-    { id: 'NetBanking', name: 'Net Banking', icon: 'business-outline' },
+    { id: 'COD', name: 'Cash on Delivery', icon: 'card-outline' },
+    { id: 'NetBanking', name: 'Net Banking', icon: 'card-outline' },
   ];
 
   if (cart.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <View style={styles.emptyIconCircle}>
-          <Ionicons name="cart-outline" size={54} color="#9CA3AF" />
+          <Icon name="cart-outline" size={54} color="#9CA3AF" />
         </View>
         <Text style={styles.emptyTitle}>Your Cart is Empty</Text>
         <Text style={styles.emptySubtitle}>
@@ -78,7 +77,6 @@ export const CartScreen: React.FC = () => {
           <Text style={styles.browseStoreBtnText}>Start Shopping</Text>
         </TouchableOpacity>
 
-        {/* Quick Add Recommendations */}
         <View style={styles.quickAddSection}>
           <Text style={styles.quickAddHeader}>Popular Quick Adds</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickAddScroll}>
@@ -107,10 +105,9 @@ export const CartScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Delivery Guarantee Pill */}
         <View style={styles.speedBanner}>
           <View style={styles.speedIconBox}>
-            <Ionicons name="flash" size={16} color="#FFF" />
+            <Icon name="flash" size={16} color="#FFF" />
           </View>
           <View style={styles.speedTextCol}>
             <Text style={styles.speedTitle}>Delivering in 10 Mins</Text>
@@ -118,7 +115,6 @@ export const CartScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Cart Items List */}
         <View style={styles.cardBox}>
           <Text style={styles.boxTitle}>Cart Items ({cart.length})</Text>
           {cart.map((item) => (
@@ -139,27 +135,26 @@ export const CartScreen: React.FC = () => {
                   style={styles.qtyStepBtn}
                   onPress={() => removeFromCart(item.product.id)}
                 >
-                  <Ionicons name="remove" size={14} color="#10B981" />
+                  <Icon name="remove" size={14} color="#10B981" />
                 </TouchableOpacity>
                 <Text style={styles.qtyVal}>{item.quantity}</Text>
                 <TouchableOpacity
                   style={styles.qtyStepBtn}
                   onPress={() => addToCart(item.product)}
                 >
-                  <Ionicons name="add" size={14} color="#10B981" />
+                  <Icon name="add" size={14} color="#10B981" />
                 </TouchableOpacity>
               </View>
             </View>
           ))}
         </View>
 
-        {/* Promo Codes & Coupons */}
         <View style={styles.cardBox}>
           <Text style={styles.boxTitle}>Apply Promo Code</Text>
           {appliedCoupon ? (
             <View style={styles.appliedCouponRow}>
               <View style={styles.appliedCouponLeft}>
-                <Ionicons name="pricetag" size={16} color="#10B981" />
+                <Icon name="ticket" size={16} color="#10B981" />
                 <View>
                   <Text style={styles.appliedCode}>{appliedCoupon.code}</Text>
                   <Text style={styles.appliedSaved}>Saved ₹{discountAmount}</Text>
@@ -193,7 +188,6 @@ export const CartScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Quick Coupon Chips */}
               <View style={styles.couponChipsRow}>
                 {AVAILABLE_COUPONS.map((c) => (
                   <TouchableOpacity
@@ -201,7 +195,7 @@ export const CartScreen: React.FC = () => {
                     style={styles.couponChip}
                     onPress={() => applyCoupon(c.code)}
                   >
-                    <Ionicons name="ticket-outline" size={12} color="#047857" />
+                    <Icon name="ticket-outline" size={12} color="#047857" />
                     <Text style={styles.couponChipText}>{c.code}</Text>
                   </TouchableOpacity>
                 ))}
@@ -210,7 +204,6 @@ export const CartScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Delivery Instructions */}
         <View style={styles.cardBox}>
           <Text style={styles.boxTitle}>Delivery Instructions</Text>
           <View style={styles.instructionsRow}>
@@ -225,8 +218,8 @@ export const CartScreen: React.FC = () => {
                   ]}
                   onPress={() => setSelectedInstruction(inst.label)}
                 >
-                  <Ionicons
-                    name={inst.icon as any}
+                  <Icon
+                    name={inst.icon}
                     size={14}
                     color={isSelected ? '#10B981' : '#6B7280'}
                   />
@@ -244,7 +237,6 @@ export const CartScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Tip Delivery Partner */}
         <View style={styles.cardBox}>
           <View style={styles.tipTitleRow}>
             <Text style={styles.boxTitle}>Tip Delivery Partner</Text>
@@ -268,7 +260,6 @@ export const CartScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Payment Method Selector */}
         <View style={styles.cardBox}>
           <Text style={styles.boxTitle}>Payment Method</Text>
           {paymentOptions.map((pay) => {
@@ -280,26 +271,26 @@ export const CartScreen: React.FC = () => {
                 onPress={() => setSelectedPayment(pay.id)}
               >
                 <View style={styles.payLeft}>
-                  <Ionicons
-                    name={pay.icon as any}
-                    size={20}
+                  <Icon
+                    name={pay.icon}
+                    size={18}
                     color={isSelected ? '#10B981' : '#4B5563'}
                   />
                   <Text style={[styles.payName, isSelected && styles.payNameSelected]}>
                     {pay.name}
                   </Text>
                 </View>
-                <Ionicons
-                  name={isSelected ? 'radio-button-on' : 'radio-button-off'}
-                  size={20}
-                  color={isSelected ? '#10B981' : '#D1D5DB'}
+                <View
+                  style={[
+                    styles.radioCircle,
+                    isSelected && styles.radioCircleSelected,
+                  ]}
                 />
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Bill Summary */}
         <View style={styles.cardBox}>
           <Text style={styles.boxTitle}>Bill Details</Text>
           <View style={styles.billLine}>
@@ -343,9 +334,8 @@ export const CartScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Address Card */}
         <View style={styles.addressCard}>
-          <Ionicons name="location" size={18} color="#10B981" />
+          <Icon name="location" size={18} color="#10B981" />
           <View style={styles.addrTextCol}>
             <Text style={styles.addrHeading}>Delivering to</Text>
             <Text style={styles.addrVal} numberOfLines={2}>
@@ -355,7 +345,6 @@ export const CartScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Floating Checkout Bottom Bar */}
       <View style={styles.checkoutBar}>
         <View style={styles.checkoutLeft}>
           <Text style={styles.checkoutTotalLabel}>TOTAL</Text>
@@ -367,7 +356,7 @@ export const CartScreen: React.FC = () => {
           activeOpacity={0.88}
         >
           <Text style={styles.placeOrderText}>Place Order (10 Mins)</Text>
-          <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+          <Icon name="arrow-forward" size={17} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
     </View>
@@ -742,6 +731,17 @@ const styles = StyleSheet.create({
   payNameSelected: {
     color: '#065F46',
     fontWeight: '700',
+  },
+  radioCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+  },
+  radioCircleSelected: {
+    borderColor: '#10B981',
+    backgroundColor: '#10B981',
   },
   billLine: {
     flexDirection: 'row',

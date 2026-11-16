@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 import { useApp } from '../context/AppContext';
 
 export const Toast: React.FC = () => {
@@ -11,7 +11,7 @@ export const Toast: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.toast}>
-        <Ionicons name="sparkles" size={16} color="#10B981" style={styles.icon} />
+        <Icon name="sparkles" size={16} color="#10B981" style={styles.icon} />
         <Text style={styles.text} numberOfLines={2}>
           {toastMessage}
         </Text>
