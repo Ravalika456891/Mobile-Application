@@ -179,7 +179,7 @@ export const PRODUCTS: Product[] = [
     rating: 4.8,
     reviewsCount: 280,
     deliveryTimeMins: 10,
-    image: 'https://images.unsplash.com/photo-1596363505729-4190a9506133?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1515779122185-2390ccdf060b?w=600&auto=format&fit=crop&q=80',
     inStock: true,
     stockCount: 30,
     isVeg: true,
