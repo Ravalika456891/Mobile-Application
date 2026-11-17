@@ -1,4 +1,10 @@
 import { Category, Product, Coupon } from '../types';
+import {
+  VEGETABLES,
+  popularVegetables,
+  VEGETABLE_SUBCATEGORIES,
+  VegetableSubcategory,
+} from './vegetables';
 
 export const CATEGORIES: Category[] = [
   { id: 'all', name: 'All Items', icon: 'grid-outline', color: '#10B981' },
@@ -958,7 +964,12 @@ export const PRODUCTS: Product[] = [
     description: 'Pillow-soft Mumbai ladi pav buns. Soft, fluffy, and the classic companion for maska pav, pav bhaji, and misal.',
     tags: ['Pillow Soft', 'Breakfast Favorite'],
   },
+
+  // ----------------- COMPLETE VEGETABLES (60 ITEMS) -----------------
+  ...VEGETABLES,
 ];
 
 export * from './FruitProduct';
 export { fruits, popularFruits, searchFruits } from './quickmart_fruits';
+export { VEGETABLES, popularVegetables, VEGETABLE_SUBCATEGORIES };
+export type { VegetableSubcategory };

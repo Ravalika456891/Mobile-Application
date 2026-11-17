@@ -113,7 +113,7 @@ const MainNavigator: React.FC = () => {
       <SafeStatusBar />
       <Toast />
       
-      {activeTab !== 'cart' && <Header />}
+      {activeTab === 'home' && <Header />}
 
       <View style={styles.body}>{renderCurrentScreen()}</View>
 

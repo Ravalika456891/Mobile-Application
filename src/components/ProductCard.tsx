@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
 import { Icon } from './Icon';
 import { Product } from '../types';
 import { useApp } from '../context/AppContext';
+
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80';
 
 interface ProductCardProps {
   product: Product;
@@ -35,6 +38,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const quantity = getItemQuantity(product.id);
   const isFavorite = isInWishlist(product.id);
+  const [imgError, setImgError] = useState(false);
 
   const discountPercent = product.originalPrice
     ? Math.round(
@@ -51,9 +55,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Top Image Container */}
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: product.image }}
+          source={{ uri: imgError ? FALLBACK_IMAGE : product.image }}
           style={styles.image}
           resizeMode="cover"
+          onError={() => setImgError(true)}
         />
 
         {/* Delivery Time Badge */}

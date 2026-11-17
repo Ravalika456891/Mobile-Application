@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,9 @@ import {
 import { Icon } from './Icon';
 import { useApp } from '../context/AppContext';
 
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80';
+
 export const ProductDetailModal: React.FC = () => {
   const {
     selectedProduct,
@@ -22,6 +25,12 @@ export const ProductDetailModal: React.FC = () => {
     toggleWishlist,
     isInWishlist,
   } = useApp();
+
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [selectedProduct?.id]);
 
   if (!selectedProduct) return null;
 
@@ -73,9 +82,12 @@ export const ProductDetailModal: React.FC = () => {
             {/* Product Image */}
             <View style={styles.imageBox}>
               <Image
-                source={{ uri: selectedProduct.image }}
+                source={{
+                  uri: imgError ? FALLBACK_IMAGE : selectedProduct.image,
+                }}
                 style={styles.mainImage}
                 resizeMode="cover"
+                onError={() => setImgError(true)}
               />
               <View style={styles.deliveryBadge}>
                 <Icon name="flash" size={13} color="#FFF" />
