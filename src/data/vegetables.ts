@@ -225,7 +225,7 @@ export const VEGETABLES: Product[] = [
     rating: 4.9,
     reviewsCount: 480,
     deliveryTimeMins: 10,
-    image: 'https://raw.githubusercontent.com/Ravalika456891/Mobile-Application/main/assets/vegetables/garlic.jpg',
+    image: 'https://raw.githubusercontent.com/Ravalika456891/Mobile-Application/main/assets/vegetables/garlic.jpg?v=2',
     inStock: true,
     stockCount: 50,
     isVeg: true,
