@@ -1,0 +1,1531 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  Modal,
+  Alert,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
+import { Icon } from '../components/Icon';
+import { useApp } from '../context/AppContext';
+import { Product, CategoryId, Order, OrderStage } from '../types';
+import { getUsersDB, LocalUser } from '../services/database';
+
+export const AdminDashboardScreen: React.FC = () => {
+  const {
+    products,
+    updateProduct,
+    toggleProductStock,
+    addProduct,
+    ordersList,
+    updateOrderStatus,
+    setIsAdminMode,
+    logout,
+    currentUser,
+    showToast,
+  } = useApp();
+
+  const [activeTab, setActiveTab] = useState<'kpi' | 'products' | 'orders' | 'users'>('kpi');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
+  const [stockOnlyFilter, setStockOnlyFilter] = useState<boolean>(false);
+
+  // Edit Product Modal
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editPrice, setEditPrice] = useState('');
+  const [editOriginalPrice, setEditOriginalPrice] = useState('');
+  const [editStockCount, setEditStockCount] = useState('');
+  const [editWeight, setEditWeight] = useState('');
+
+  // Add Product Modal
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newCategory, setNewCategory] = useState<CategoryId>('vegetables');
+  const [newSubcategory, setNewSubcategory] = useState('Fresh Produce');
+  const [newPrice, setNewPrice] = useState('');
+  const [newOriginalPrice, setNewOriginalPrice] = useState('');
+  const [newWeight, setNewWeight] = useState('500 g');
+  const [newStockCount, setNewStockCount] = useState('50');
+  const [newDescription, setNewDescription] = useState('');
+
+  // Users List
+  const [usersList, setUsersList] = useState<LocalUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Order Filter
+  const [orderFilter, setOrderFilter] = useState<string>('all');
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      loadUsers();
+    }
+  }, [activeTab]);
+
+  const loadUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const u = await getUsersDB();
+      setUsersList(u);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Open Edit Modal
+  const handleOpenEdit = (product: Product) => {
+    setEditingProduct(product);
+    setEditPrice(String(product.price));
+    setEditOriginalPrice(product.originalPrice ? String(product.originalPrice) : '');
+    setEditStockCount(String(product.stockCount));
+    setEditWeight(product.weightOrSize);
+    setEditModalVisible(true);
+  };
+
+  const handleSaveProductEdit = () => {
+    if (!editingProduct) return;
+    const priceNum = parseFloat(editPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      Alert.alert('Invalid Price', 'Please enter a valid selling price.');
+      return;
+    }
+    const stockNum = parseInt(editStockCount, 10);
+    const origPriceNum = editOriginalPrice ? parseFloat(editOriginalPrice) : undefined;
+
+    updateProduct(editingProduct.id, {
+      price: priceNum,
+      originalPrice: origPriceNum,
+      stockCount: isNaN(stockNum) ? 0 : stockNum,
+      inStock: isNaN(stockNum) ? false : stockNum > 0,
+      weightOrSize: editWeight.trim() || editingProduct.weightOrSize,
+    });
+
+    setEditModalVisible(false);
+    setEditingProduct(null);
+  };
+
+  // Save New Product
+  const handleCreateProduct = () => {
+    if (!newName.trim()) {
+      Alert.alert('Required', 'Please enter the product name.');
+      return;
+    }
+    const priceNum = parseFloat(newPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      Alert.alert('Invalid Price', 'Please enter a valid price.');
+      return;
+    }
+    const stockNum = parseInt(newStockCount, 10) || 50;
+    const origPriceNum = newOriginalPrice ? parseFloat(newOriginalPrice) : priceNum + 20;
+
+    const newProd: Product = {
+      id: `adm-${Date.now()}`,
+      name: newName.trim(),
+      category: newCategory,
+      subcategory: newSubcategory.trim() || 'Everyday Essentials',
+      price: priceNum,
+      originalPrice: origPriceNum,
+      weightOrSize: newWeight.trim() || '500 g',
+      rating: 4.8,
+      reviewsCount: 12,
+      deliveryTimeMins: 10,
+      image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&auto=format&fit=crop&q=80',
+      inStock: stockNum > 0,
+      stockCount: stockNum,
+      description: newDescription.trim() || `Fresh quality ${newName.trim()} delivered instantly.`,
+      isVeg: true,
+    };
+
+    addProduct(newProd);
+    setAddModalVisible(false);
+    setNewName('');
+    setNewPrice('');
+    setNewOriginalPrice('');
+    setNewDescription('');
+  };
+
+  // KPI calculations
+  const totalRevenue = ordersList.reduce((sum, o) => sum + o.total, 0) + 18450;
+  const outOfStockCount = products.filter((p) => !p.inStock || p.stockCount === 0).length;
+  const inStockCount = products.length - outOfStockCount;
+
+  // Filtered Products
+  const filteredProducts = products.filter((p) => {
+    const matchQuery =
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.subcategory.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchCat =
+      selectedCategoryFilter === 'all' ||
+      p.category === selectedCategoryFilter ||
+      (selectedCategoryFilter === 'vegetables' && p.category === 'vegetables') ||
+      (selectedCategoryFilter === 'fruits' && p.category === 'fruits');
+    const matchStock = stockOnlyFilter ? !p.inStock || p.stockCount === 0 : true;
+    return matchQuery && matchCat && matchStock;
+  });
+
+  // Filtered Orders
+  const filteredOrders = ordersList.filter((o) => {
+    if (orderFilter === 'all') return true;
+    return o.status === orderFilter;
+  });
+
+  const getNextStage = (current: OrderStage): OrderStage | null => {
+    switch (current) {
+      case 'CONFIRMED':
+        return 'PACKING';
+      case 'PACKING':
+        return 'RIDER_ASSIGNED';
+      case 'RIDER_ASSIGNED':
+        return 'OUT_FOR_DELIVERY';
+      case 'OUT_FOR_DELIVERY':
+        return 'DELIVERED';
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* Top Admin Header Bar */}
+      <View style={styles.topHeader}>
+        <View style={styles.adminBadgeRow}>
+          <View style={styles.shieldIconWrapper}>
+            <Icon name="shield-checkmark" size={20} color="#FFFFFF" />
+          </View>
+          <View>
+            <Text style={styles.headerTitle}>QuickMart Admin Hub</Text>
+            <Text style={styles.headerSubtitle}>
+              Store Manager: {currentUser?.name || 'Administrator'} 🟢 Live
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.topHeaderButtons}>
+          <TouchableOpacity
+            style={styles.storeViewBtn}
+            onPress={() => {
+              setIsAdminMode(false);
+              showToast('Switched to Customer Store View 🛒');
+            }}
+            activeOpacity={0.8}
+          >
+            <Icon name="cart-outline" size={16} color="#059669" />
+            <Text style={styles.storeViewBtnText}>Store View</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            onPress={() => {
+              Alert.alert('Log Out Admin', 'Are you sure you want to log out of the admin portal?', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Log Out',
+                  style: 'destructive',
+                  onPress: async () => {
+                    await logout();
+                  },
+                },
+              ]);
+            }}
+            activeOpacity={0.8}
+          >
+            <Icon name="log-out-outline" size={16} color="#DC2626" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Admin Navigation Tabs */}
+      <View style={styles.tabNavRow}>
+        <TouchableOpacity
+          style={[styles.tabNavBtn, activeTab === 'kpi' && styles.tabNavBtnActive]}
+          onPress={() => setActiveTab('kpi')}
+        >
+          <Icon name="flash" size={16} color={activeTab === 'kpi' ? '#059669' : '#6B7280'} />
+          <Text style={[styles.tabNavText, activeTab === 'kpi' && styles.tabNavTextActive]}>
+            Overview
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabNavBtn, activeTab === 'products' && styles.tabNavBtnActive]}
+          onPress={() => setActiveTab('products')}
+        >
+          <Icon name="cube" size={16} color={activeTab === 'products' ? '#059669' : '#6B7280'} />
+          <Text style={[styles.tabNavText, activeTab === 'products' && styles.tabNavTextActive]}>
+            Inventory ({products.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabNavBtn, activeTab === 'orders' && styles.tabNavBtnActive]}
+          onPress={() => setActiveTab('orders')}
+        >
+          <Icon name="bicycle" size={16} color={activeTab === 'orders' ? '#059669' : '#6B7280'} />
+          <Text style={[styles.tabNavText, activeTab === 'orders' && styles.tabNavTextActive]}>
+            Orders ({ordersList.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabNavBtn, activeTab === 'users' && styles.tabNavBtnActive]}
+          onPress={() => setActiveTab('users')}
+        >
+          <Icon name="person" size={16} color={activeTab === 'users' ? '#059669' : '#6B7280'} />
+          <Text style={[styles.tabNavText, activeTab === 'users' && styles.tabNavTextActive]}>
+            Users
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* TAB CONTENT */}
+      {activeTab === 'kpi' && (
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          {/* KPI Cards Grid */}
+          <View style={styles.kpiGrid}>
+            <View style={[styles.kpiCard, { borderLeftColor: '#10B981' }]}>
+              <View style={styles.kpiIconBoxGreen}>
+                <Text style={styles.kpiCurrencySymbol}>₹</Text>
+              </View>
+              <Text style={styles.kpiLabel}>Total Revenue</Text>
+              <Text style={styles.kpiValue}>₹{totalRevenue.toLocaleString('en-IN')}</Text>
+              <Text style={styles.kpiSubtext}>+18.4% today</Text>
+            </View>
+
+            <View style={[styles.kpiCard, { borderLeftColor: '#3B82F6' }]}>
+              <View style={styles.kpiIconBoxBlue}>
+                <Icon name="cube" size={18} color="#3B82F6" />
+              </View>
+              <Text style={styles.kpiLabel}>Total Catalog Items</Text>
+              <Text style={styles.kpiValue}>{products.length}</Text>
+              <Text style={styles.kpiSubtext}>{inStockCount} active in stock</Text>
+            </View>
+
+            <View style={[styles.kpiCard, { borderLeftColor: '#F59E0B' }]}>
+              <View style={styles.kpiIconBoxYellow}>
+                <Icon name="bicycle" size={18} color="#D97706" />
+              </View>
+              <Text style={styles.kpiLabel}>Active Orders</Text>
+              <Text style={styles.kpiValue}>{ordersList.length}</Text>
+              <Text style={styles.kpiSubtext}>100% 10-min target</Text>
+            </View>
+
+            <View style={[styles.kpiCard, { borderLeftColor: outOfStockCount > 0 ? '#EF4444' : '#10B981' }]}>
+              <View style={styles.kpiIconBoxRed}>
+                <Icon name="alert-circle" size={18} color="#EF4444" />
+              </View>
+              <Text style={styles.kpiLabel}>Out of Stock</Text>
+              <Text style={[styles.kpiValue, { color: outOfStockCount > 0 ? '#DC2626' : '#10B981' }]}>
+                {outOfStockCount}
+              </Text>
+              <TouchableOpacity onPress={() => {
+                setActiveTab('products');
+                setStockOnlyFilter(true);
+              }}>
+                <Text style={styles.kpiActionLink}>Review Items ›</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Quick Action Buttons */}
+          <View style={styles.quickActionCard}>
+            <Text style={styles.cardHeaderTitle}>⚡ Admin Fast Actions</Text>
+            <View style={styles.quickActionsRow}>
+              <TouchableOpacity
+                style={styles.actionPillBtn}
+                onPress={() => setAddModalVisible(true)}
+              >
+                <Icon name="add" size={16} color="#FFFFFF" />
+                <Text style={styles.actionPillBtnText}>Add Product</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionPillBtn, { backgroundColor: '#3B82F6' }]}
+                onPress={() => setActiveTab('orders')}
+              >
+                <Icon name="bicycle" size={16} color="#FFFFFF" />
+                <Text style={styles.actionPillBtnText}>Dispatch Orders</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionPillBtn, { backgroundColor: '#8B5CF6' }]}
+                onPress={() => {
+                  setActiveTab('products');
+                  setSelectedCategoryFilter('vegetables');
+                }}
+              >
+                <Icon name="leaf" size={16} color="#FFFFFF" />
+                <Text style={styles.actionPillBtnText}>Vegetables (60)</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Store Health & Category Stats */}
+          <View style={styles.infoCard}>
+            <Text style={styles.cardHeaderTitle}>📊 Catalog Category Health</Text>
+            <View style={styles.healthRow}>
+              <Text style={styles.healthCategory}>🥕 Fresh Vegetables</Text>
+              <Text style={styles.healthCount}>60 Products</Text>
+            </View>
+            <View style={styles.healthRow}>
+              <Text style={styles.healthCategory}>🍎 Popular Fruits</Text>
+              <Text style={styles.healthCount}>18 Products</Text>
+            </View>
+            <View style={styles.healthRow}>
+              <Text style={styles.healthCategory}>🥛 Dairy, Bread & Eggs</Text>
+              <Text style={styles.healthCount}>14 Products</Text>
+            </View>
+            <View style={styles.healthRow}>
+              <Text style={styles.healthCategory}>🌾 Rice, Atta & Grains</Text>
+              <Text style={styles.healthCount}>12 Products</Text>
+            </View>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* TAB: PRODUCTS & INVENTORY */}
+      {activeTab === 'products' && (
+        <View style={{ flex: 1 }}>
+          {/* Search & Filter Header */}
+          <View style={styles.productSearchBox}>
+            <View style={styles.searchInputWrapper}>
+              <Icon name="search" size={18} color="#9CA3AF" />
+              <TextInput
+                style={styles.searchTextInput}
+                placeholder="Search products to manage..."
+                placeholderTextColor="#9CA3AF"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Icon name="close" size={18} color="#9CA3AF" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.addNewProdHeaderBtn}
+              onPress={() => setAddModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Icon name="add" size={18} color="#FFFFFF" />
+              <Text style={styles.addNewProdHeaderText}>Add Item</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Category Filter Pills */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryFiltersScroll}
+          >
+            {[
+              { id: 'all', label: 'All Items' },
+              { id: 'vegetables', label: 'Vegetables (60)' },
+              { id: 'fruits', label: 'Fruits' },
+              { id: 'dairy', label: 'Dairy & Bread' },
+              { id: 'rice-grains', label: 'Rice & Grains' },
+            ].map((cat) => (
+              <TouchableOpacity
+                key={cat.id}
+                style={[
+                  styles.filterPill,
+                  selectedCategoryFilter === cat.id && styles.filterPillActive,
+                ]}
+                onPress={() => {
+                  setSelectedCategoryFilter(cat.id);
+                  setStockOnlyFilter(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.filterPillText,
+                    selectedCategoryFilter === cat.id && styles.filterPillTextActive,
+                  ]}
+                >
+                  {cat.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+              style={[
+                styles.filterPill,
+                stockOnlyFilter && { backgroundColor: '#FEE2E2', borderColor: '#EF4444' },
+              ]}
+              onPress={() => setStockOnlyFilter(!stockOnlyFilter)}
+            >
+              <Text
+                style={[
+                  styles.filterPillText,
+                  stockOnlyFilter && { color: '#DC2626', fontWeight: '700' },
+                ]}
+              >
+                ⚠️ Out of Stock ({outOfStockCount})
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+
+          {/* Product Items List */}
+          <ScrollView style={styles.productsScroll} showsVerticalScrollIndicator={false}>
+            <Text style={styles.resultsCount}>
+              Showing {filteredProducts.length} products
+            </Text>
+
+            {filteredProducts.map((prod) => (
+              <View key={prod.id} style={styles.productRowCard}>
+                <Image
+                  source={{ uri: prod.image }}
+                  style={styles.prodThumb}
+                  defaultSource={{ uri: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=100' }}
+                />
+
+                <View style={styles.prodRowInfo}>
+                  <Text style={styles.prodRowName} numberOfLines={1}>
+                    {prod.name}
+                  </Text>
+                  <Text style={styles.prodRowSub}>
+                    {prod.subcategory} • {prod.weightOrSize}
+                  </Text>
+
+                  <View style={styles.prodPriceStockRow}>
+                    <Text style={styles.prodRowPrice}>₹{prod.price}</Text>
+                    {prod.originalPrice ? (
+                      <Text style={styles.prodRowOrigPrice}>₹{prod.originalPrice}</Text>
+                    ) : null}
+
+                    <View
+                      style={[
+                        styles.stockBadge,
+                        prod.inStock ? styles.stockBadgeIn : styles.stockBadgeOut,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.stockBadgeText,
+                          prod.inStock ? styles.stockTextIn : styles.stockTextOut,
+                        ]}
+                      >
+                        {prod.inStock ? `In Stock (${prod.stockCount || 20})` : 'Out of Stock'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Quick Stock and Edit Buttons */}
+                <View style={styles.prodActionsCol}>
+                  <TouchableOpacity
+                    style={[
+                      styles.quickStockBtn,
+                      prod.inStock ? styles.stockBtnOut : styles.stockBtnIn,
+                    ]}
+                    onPress={() => toggleProductStock(prod.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.quickStockBtnText,
+                        prod.inStock ? { color: '#DC2626' } : { color: '#059669' },
+                      ]}
+                    >
+                      {prod.inStock ? 'Mark OOS' : 'Make In Stock'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.editPriceBtn}
+                    onPress={() => handleOpenEdit(prod)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.editPriceBtnText}>Edit ✏️</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+
+            <View style={{ height: 60 }} />
+          </ScrollView>
+        </View>
+      )}
+
+      {/* TAB: ORDERS MANAGEMENT */}
+      {activeTab === 'orders' && (
+        <View style={{ flex: 1 }}>
+          {/* Order Status Filters */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryFiltersScroll}
+          >
+            {[
+              { id: 'all', label: 'All Orders' },
+              { id: 'CONFIRMED', label: 'Confirmed' },
+              { id: 'PACKING', label: 'Packing' },
+              { id: 'OUT_FOR_DELIVERY', label: 'Out for Delivery' },
+              { id: 'DELIVERED', label: 'Delivered' },
+            ].map((f) => (
+              <TouchableOpacity
+                key={f.id}
+                style={[styles.filterPill, orderFilter === f.id && styles.filterPillActive]}
+                onPress={() => setOrderFilter(f.id)}
+              >
+                <Text
+                  style={[
+                    styles.filterPillText,
+                    orderFilter === f.id && styles.filterPillTextActive,
+                  ]}
+                >
+                  {f.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <ScrollView style={styles.ordersScroll} showsVerticalScrollIndicator={false}>
+            {filteredOrders.length === 0 ? (
+              <View style={styles.emptyOrdersBox}>
+                <Icon name="bicycle" size={40} color="#9CA3AF" />
+                <Text style={styles.emptyOrdersTitle}>No orders in this status</Text>
+              </View>
+            ) : (
+              filteredOrders.map((ord) => {
+                const next = getNextStage((ord.stage || ord.status) as OrderStage);
+                return (
+                  <View key={ord.id} style={styles.orderCard}>
+                    <View style={styles.orderCardHeader}>
+                      <View>
+                        <Text style={styles.orderCardId}>{ord.id}</Text>
+                        <Text style={styles.orderCardDate}>
+                          {new Date(ord.createdAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })} • {ord.paymentMethod}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.orderStatusBadge,
+                          ord.status === 'DELIVERED'
+                            ? styles.statusDelivered
+                            : styles.statusLive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.orderStatusBadgeText,
+                            ord.status === 'DELIVERED'
+                              ? { color: '#059669' }
+                              : { color: '#D97706' },
+                          ]}
+                        >
+                          {ord.status}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.orderAddressText} numberOfLines={1}>
+                      📍 {ord.deliveryAddress}
+                    </Text>
+
+                    {/* Items mini list */}
+                    <View style={styles.orderItemsBox}>
+                      {ord.items.map((item, idx) => (
+                        <Text key={idx} style={styles.orderItemRow}>
+                          • {item.quantity}x {item.product.name} (₹{item.product.price})
+                        </Text>
+                      ))}
+                    </View>
+
+                    <View style={styles.orderFooterRow}>
+                      <Text style={styles.orderTotalText}>Total: ₹{ord.total}</Text>
+
+                      {next ? (
+                        <TouchableOpacity
+                          style={styles.advanceStatusBtn}
+                          onPress={() => updateOrderStatus(ord.id, next)}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={styles.advanceStatusBtnText}>
+                            Advance to {next.replace(/_/g, ' ')} ›
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={styles.completedBadge}>
+                          <Text style={styles.completedBadgeText}>Completed ✅</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                );
+              })
+            )}
+
+            <View style={{ height: 60 }} />
+          </ScrollView>
+        </View>
+      )}
+
+      {/* TAB: USERS & ACCOUNTS */}
+      {activeTab === 'users' && (
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          <Text style={styles.cardHeaderTitle}>👥 Registered Accounts ({usersList.length})</Text>
+
+          {loadingUsers ? (
+            <ActivityIndicator style={{ marginTop: 30 }} color="#059669" />
+          ) : (
+            usersList.map((u) => (
+              <View key={u.id} style={styles.userCard}>
+                <View style={styles.userAvatarBox}>
+                  <Text style={styles.userAvatarText}>{u.name.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={styles.userNameText}>{u.name}</Text>
+                    {u.role === 'admin' && (
+                      <View style={styles.adminRoleTag}>
+                        <Text style={styles.adminRoleTagText}>Admin</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.userMobileText}>📱 +91 {u.mobile}</Text>
+                  {u.email && <Text style={styles.userEmailText}>✉️ {u.email}</Text>}
+                </View>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      )}
+
+      {/* MODAL: EDIT PRODUCT */}
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Product</Text>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <Icon name="close" size={22} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalProdName}>{editingProduct?.name}</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Selling Price (₹)</Text>
+              <TextInput
+                style={styles.modalInput}
+                keyboardType="numeric"
+                value={editPrice}
+                onChangeText={setEditPrice}
+                placeholder="Price"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Original Price (₹ MRP)</Text>
+              <TextInput
+                style={styles.modalInput}
+                keyboardType="numeric"
+                value={editOriginalPrice}
+                onChangeText={setEditOriginalPrice}
+                placeholder="Original Price"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Stock Quantity (Units)</Text>
+              <TextInput
+                style={styles.modalInput}
+                keyboardType="numeric"
+                value={editStockCount}
+                onChangeText={setEditStockCount}
+                placeholder="Stock quantity"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Weight or Pack Size</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editWeight}
+                onChangeText={setEditWeight}
+                placeholder="e.g. 500 g, 1 kg, 1 bunch"
+              />
+            </View>
+
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveProductEdit}>
+              <Text style={styles.saveBtnText}>Save Product Changes</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: ADD PRODUCT */}
+      <Modal
+        visible={addModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAddModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <ScrollView contentContainerStyle={styles.modalScroll}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Add New Grocery Item</Text>
+                <TouchableOpacity onPress={() => setAddModalVisible(false)}>
+                  <Icon name="close" size={22} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Item Name *</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g. Organic Baby Spinach"
+                  value={newName}
+                  onChangeText={setNewName}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Category</Text>
+                <View style={styles.catPickerRow}>
+                  {[
+                    { id: 'vegetables', label: 'Vegetables' },
+                    { id: 'fruits', label: 'Fruits' },
+                    { id: 'dairy', label: 'Dairy' },
+                    { id: 'groceries', label: 'Grains' },
+                  ].map((c) => (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[
+                        styles.catPillBtn,
+                        newCategory === c.id && styles.catPillBtnActive,
+                      ]}
+                      onPress={() => setNewCategory(c.id as CategoryId)}
+                    >
+                      <Text
+                        style={[
+                          styles.catPillText,
+                          newCategory === c.id && styles.catPillTextActive,
+                        ]}
+                      >
+                        {c.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Subcategory</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g. Leafy Greens"
+                  value={newSubcategory}
+                  onChangeText={setNewSubcategory}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Selling Price (₹) *</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  keyboardType="numeric"
+                  placeholder="e.g. 45"
+                  value={newPrice}
+                  onChangeText={setNewPrice}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Original Price (₹)</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  keyboardType="numeric"
+                  placeholder="e.g. 60"
+                  value={newOriginalPrice}
+                  onChangeText={setNewOriginalPrice}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Weight or Unit</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g. 250 g, 1 bunch"
+                  value={newWeight}
+                  onChangeText={setNewWeight}
+                />
+              </View>
+
+              <TouchableOpacity style={styles.saveBtn} onPress={handleCreateProduct}>
+                <Text style={styles.saveBtnText}>Add Product to Store</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+  },
+  topHeader: {
+    backgroundColor: '#064E3B',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 12 : 8,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  adminBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  shieldIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#059669',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#A7F3D0',
+    marginTop: 2,
+  },
+  topHeaderButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  storeViewBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  storeViewBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  logoutBtn: {
+    backgroundColor: '#FEE2E2',
+    padding: 6,
+    borderRadius: 8,
+  },
+  tabNavRow: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  tabNavBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+    borderBottomWidth: 2,
+    borderColor: 'transparent',
+  },
+  tabNavBtnActive: {
+    borderColor: '#059669',
+  },
+  tabNavText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  tabNavTextActive: {
+    color: '#059669',
+    fontWeight: '700',
+  },
+  tabContent: {
+    flex: 1,
+    padding: 16,
+  },
+  kpiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  kpiCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  kpiIconBoxGreen: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#D1FAE5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  kpiCurrencySymbol: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  kpiIconBoxBlue: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#DBEAFE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  kpiIconBoxYellow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  kpiIconBoxRed: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  kpiLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+  },
+  kpiValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111827',
+    marginTop: 4,
+  },
+  kpiSubtext: {
+    fontSize: 11,
+    color: '#059669',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  kpiActionLink: {
+    fontSize: 11,
+    color: '#DC2626',
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  quickActionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    elevation: 2,
+  },
+  cardHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  actionPillBtn: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionPillBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  infoCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 30,
+    elevation: 2,
+  },
+  healthRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  healthCategory: {
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  healthCount: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  productSearchBox: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 38,
+    gap: 6,
+  },
+  searchTextInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#111827',
+    padding: 0,
+  },
+  addNewProdHeaderBtn: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  addNewProdHeaderText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  categoryFiltersScroll: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    gap: 8,
+  },
+  filterPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  filterPillActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  filterPillText: {
+    fontSize: 12,
+    color: '#4B5563',
+    fontWeight: '600',
+  },
+  filterPillTextActive: {
+    color: '#FFFFFF',
+  },
+  productsScroll: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  resultsCount: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  productRowCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    elevation: 1,
+    gap: 10,
+  },
+  prodThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  prodRowInfo: {
+    flex: 1,
+  },
+  prodRowName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  prodRowSub: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  prodPriceStockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  prodRowPrice: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  prodRowOrigPrice: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+  },
+  stockBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  stockBadgeIn: {
+    backgroundColor: '#D1FAE5',
+  },
+  stockBadgeOut: {
+    backgroundColor: '#FEE2E2',
+  },
+  stockBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  stockTextIn: {
+    color: '#059669',
+  },
+  stockTextOut: {
+    color: '#DC2626',
+  },
+  prodActionsCol: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  quickStockBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  stockBtnIn: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#059669',
+  },
+  stockBtnOut: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#DC2626',
+  },
+  quickStockBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  editPriceBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  editPriceBtnText: {
+    fontSize: 11,
+    color: '#3B82F6',
+    fontWeight: '600',
+  },
+  ordersScroll: {
+    flex: 1,
+    padding: 16,
+  },
+  orderCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    elevation: 2,
+  },
+  orderCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  orderCardId: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  orderCardDate: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  orderStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusLive: {
+    backgroundColor: '#FEF3C7',
+  },
+  statusDelivered: {
+    backgroundColor: '#D1FAE5',
+  },
+  orderStatusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  orderAddressText: {
+    fontSize: 12,
+    color: '#4B5563',
+    marginVertical: 6,
+  },
+  orderItemsBox: {
+    backgroundColor: '#F9FAFB',
+    padding: 8,
+    borderRadius: 6,
+    marginVertical: 6,
+  },
+  orderItemRow: {
+    fontSize: 12,
+    color: '#374151',
+    lineHeight: 18,
+  },
+  orderFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  orderTotalText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  advanceStatusBtn: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  advanceStatusBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  completedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#D1FAE5',
+    borderRadius: 6,
+  },
+  completedBadgeText: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '700',
+  },
+  emptyOrdersBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyOrdersTitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 8,
+  },
+  userCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    elevation: 1,
+  },
+  userAvatarBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#059669',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  userNameText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  adminRoleTag: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 6,
+  },
+  adminRoleTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  userMobileText: {
+    fontSize: 12,
+    color: '#4B5563',
+    marginTop: 2,
+  },
+  userEmailText: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalScroll: {
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 18,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  modalProdName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#059669',
+    marginBottom: 12,
+  },
+  inputGroup: {
+    marginBottom: 12,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  modalInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#111827',
+  },
+  saveBtn: {
+    backgroundColor: '#059669',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  saveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  catPickerRow: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  catPillBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#F9FAFB',
+  },
+  catPillBtnActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  catPillText: {
+    fontSize: 12,
+    color: '#4B5563',
+    fontWeight: '600',
+  },
+  catPillTextActive: {
+    color: '#FFFFFF',
+  },
+});

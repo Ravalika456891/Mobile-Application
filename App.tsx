@@ -13,6 +13,7 @@ import { TrackingScreen } from './src/screens/TrackingScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
+import { AdminDashboardScreen } from './src/screens/AdminDashboardScreen';
 
 const SafeStatusBar: React.FC = () => {
   try {
@@ -69,7 +70,17 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 const MainNavigator: React.FC = () => {
-  const { activeTab, authScreen, cartCount } = useApp();
+  const { activeTab, authScreen, cartCount, isAdminMode, isAdmin, setIsAdminMode } = useApp();
+
+  if (isAdminMode) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <SafeStatusBar />
+        <Toast />
+        <AdminDashboardScreen />
+      </SafeAreaView>
+    );
+  }
 
   if (authScreen === 'login') {
     return (
@@ -119,6 +130,23 @@ const MainNavigator: React.FC = () => {
 
       {/* Floating Compact Cart Summary Bar */}
       {cartCount > 0 && activeTab !== 'cart' && <CartSummaryBar />}
+
+      {/* Floating Admin Switcher Bar when Admin is in Customer Store View */}
+      {isAdmin && !isAdminMode && (
+        <TouchableOpacity
+          style={styles.adminFloatingBar}
+          onPress={() => setIsAdminMode(true)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.adminFloatingLeft}>
+            <View style={styles.adminPulseDot} />
+            <Text style={styles.adminFloatingText}>Admin Mode Active</Text>
+          </View>
+          <View style={styles.adminFloatingAction}>
+            <Text style={styles.adminFloatingActionText}>Open Admin Hub 🛡️</Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       <BottomNav />
 
@@ -184,6 +212,43 @@ const styles = StyleSheet.create({
   errorButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
+    fontWeight: '700',
+  },
+  adminFloatingBar: {
+    backgroundColor: '#064E3B',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#059669',
+  },
+  adminFloatingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  adminPulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+  },
+  adminFloatingText: {
+    color: '#D1FAE5',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  adminFloatingAction: {
+    backgroundColor: '#10B981',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  adminFloatingActionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '700',
   },
 });

@@ -33,8 +33,20 @@ interface AppContextType {
   selectedProduct: Product | null;
   toastMessage: string | null;
 
+  // Admin capabilities
+  isAdmin: boolean;
+  isAdminMode: boolean;
+  setIsAdminMode: (mode: boolean) => void;
+  initialLoginMode: 'customer' | 'admin';
+  setInitialLoginMode: (mode: 'customer' | 'admin') => void;
+  updateProduct: (productId: string, updates: Partial<Product>) => void;
+  toggleProductStock: (productId: string) => void;
+  addProduct: (product: Product) => void;
+  ordersList: Order[];
+  updateOrderStatus: (orderId: string, status: OrderStage) => void;
+
   setAuthScreen: (screen: 'login' | 'register' | null) => void;
-  login: (mobile: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  login: (identifier: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, mobile: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (name: string, mobile: string) => Promise<{ success: boolean; error?: string }>;
@@ -79,7 +91,110 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [authScreen, setAuthScreen] = useState<'login' | 'register' | null>(null);
 
-  const [products] = useState<Product[]>(PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
+  const [initialLoginMode, setInitialLoginMode] = useState<'customer' | 'admin'>('customer');
+  const [ordersList, setOrdersList] = useState<Order[]>([
+    {
+      id: 'ORD-894210',
+      items: [
+        { product: PRODUCTS[0], quantity: 2 },
+        { product: PRODUCTS[1], quantity: 1 },
+      ],
+      total: 185,
+      subtotal: 170,
+      deliveryFee: 15,
+      discount: 0,
+      tip: 0,
+      status: 'CONFIRMED',
+      stage: 'CONFIRMED',
+      estimatedDeliveryMins: 10,
+      remainingSeconds: 600,
+      createdAt: new Date(Date.now() - 15 * 60 * 1000),
+      deliveryAddress: 'Flat 402, Green Valley Apts, Silicon Boulevard',
+      paymentMethod: 'UPI (Google Pay)',
+      rider: {
+        name: 'Vikram Singh',
+        phone: '+91 98765 43210',
+        rating: 4.9,
+        vehicle: 'Electric Superbike',
+        vehicleNumber: 'MH 02 EQ 8812',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+        currentLatProgress: 0.45,
+      },
+    },
+    {
+      id: 'ORD-761239',
+      items: [
+        { product: PRODUCTS[2] || PRODUCTS[0], quantity: 3 },
+      ],
+      total: 135,
+      subtotal: 120,
+      deliveryFee: 15,
+      discount: 0,
+      tip: 0,
+      status: 'DELIVERED',
+      stage: 'DELIVERED',
+      estimatedDeliveryMins: 0,
+      remainingSeconds: 0,
+      createdAt: new Date(Date.now() - 3 * 3600 * 1000),
+      deliveryAddress: 'Floor 7, TechHub Tower, Innovation Way',
+      paymentMethod: 'Cash on Delivery',
+      rider: {
+        name: 'Rahul Verma',
+        phone: '+91 98765 11223',
+        rating: 4.8,
+        vehicle: 'Eco Scooter',
+        vehicleNumber: 'MH 02 AB 4590',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+        currentLatProgress: 1.0,
+      },
+    },
+  ]);
+
+  const isAdmin = currentUser?.role === 'admin';
+
+  const updateProduct = (productId: string, updates: Partial<Product>) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, ...updates } : p))
+    );
+    showToast('Product updated successfully 📦');
+  };
+
+  const toggleProductStock = (productId: string) => {
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id === productId) {
+          const nextStock = !p.inStock;
+          showToast(`${p.name} is now ${nextStock ? 'In Stock' : 'Out of Stock'}`);
+          return {
+            ...p,
+            inStock: nextStock,
+            stockCount: nextStock ? (p.stockCount > 0 ? p.stockCount : 30) : 0,
+          };
+        }
+        return p;
+      })
+    );
+  };
+
+  const addProduct = (newProduct: Product) => {
+    setProducts((prev) => [newProduct, ...prev]);
+    showToast(`Added ${newProduct.name} to catalog! 🎉`);
+  };
+
+  const updateOrderStatus = (orderId: string, newStage: OrderStage) => {
+    setOrdersList((prev) =>
+      prev.map((ord) =>
+        ord.id === orderId ? { ...ord, status: newStage, stage: newStage } : ord
+      )
+    );
+    if (activeOrder && activeOrder.id === orderId) {
+      setActiveOrder((prev) => (prev ? { ...prev, status: newStage, stage: newStage } : null));
+    }
+    showToast(`Order status updated: ${newStage.replace(/_/g, ' ')}`);
+  };
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>(['fv-1', 'dairy-1']);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
@@ -120,12 +235,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     init();
   }, []);
 
-  const login = async (mobile: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-    const res = await loginUserDB(mobile, pass);
+  const login = async (identifier: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    const res = await loginUserDB(identifier, pass);
     if (res.success && res.user) {
       setCurrentUser(res.user);
       setAuthScreen(null);
-      showToast(`Welcome back, ${res.user.name}! 👋`);
+      if (res.user.role === 'admin') {
+        setIsAdminMode(true);
+        showToast(`Welcome Admin ${res.user.name}! 🛡️ Control Hub Active.`);
+      } else {
+        setIsAdminMode(false);
+        showToast(`Welcome back, ${res.user.name}! 👋`);
+      }
       return { success: true };
     }
     return { success: false, error: res.error || 'Login failed' };
@@ -136,6 +257,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (res.success && res.user) {
       setCurrentUser(res.user);
       setAuthScreen(null);
+      setIsAdminMode(false);
       showToast(`Account created! Welcome, ${res.user.name} 🎉`);
       return { success: true };
     }
@@ -145,6 +267,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = async () => {
     await clearSessionDB();
     setCurrentUser(null);
+    setIsAdminMode(false);
     setAuthScreen('login');
     setActiveTab('home');
     showToast('Logged out of account');
@@ -271,6 +394,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       paymentMethod,
     };
     setActiveOrder(newOrder);
+    setOrdersList((prev) => [newOrder, ...prev]);
     setCart([]);
     setAppliedCoupon(null);
     setActiveTab('tracking');
@@ -328,6 +452,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activeTab,
         selectedProduct,
         toastMessage,
+
+        isAdmin,
+        isAdminMode,
+        setIsAdminMode,
+        initialLoginMode,
+        setInitialLoginMode,
+        updateProduct,
+        toggleProductStock,
+        addProduct,
+        ordersList,
+        updateOrderStatus,
 
         setAuthScreen,
         login,

@@ -4,13 +4,14 @@ import { Icon } from './Icon';
 import { useApp } from '../context/AppContext';
 
 export const BottomNav: React.FC = () => {
-  const { activeTab, setActiveTab, cartCount, activeOrder } = useApp();
+  const { activeTab, setActiveTab, cartCount, activeOrder, isAdmin, setIsAdminMode } = useApp();
 
   const tabs: {
-    id: 'home' | 'categories' | 'cart' | 'tracking' | 'profile';
+    id: 'home' | 'categories' | 'cart' | 'tracking' | 'profile' | 'admin';
     label: string;
     icon: string;
     badge?: number | string;
+    action?: () => void;
   }[] = [
     { id: 'home', label: 'Shop', icon: 'home-outline' },
     { id: 'categories', label: 'Categories', icon: 'grid-outline' },
@@ -27,6 +28,17 @@ export const BottomNav: React.FC = () => {
       badge: activeOrder && activeOrder.status !== 'DELIVERED' ? 'LIVE' : undefined,
     },
     { id: 'profile', label: 'Account', icon: 'person-outline' },
+    ...(isAdmin
+      ? [
+          {
+            id: 'admin' as const,
+            label: 'Admin Hub',
+            icon: 'shield-checkmark',
+            badge: 'PRO',
+            action: () => setIsAdminMode(true),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -37,14 +49,20 @@ export const BottomNav: React.FC = () => {
           <TouchableOpacity
             key={tab.id}
             style={styles.tabBtn}
-            onPress={() => setActiveTab(tab.id)}
+            onPress={() => {
+              if (tab.action) {
+                tab.action();
+              } else {
+                setActiveTab(tab.id as any);
+              }
+            }}
             activeOpacity={0.7}
           >
             <View style={styles.iconWrapper}>
               <Icon
                 name={tab.icon}
                 size={22}
-                color={isActive ? '#10B981' : '#6B7280'}
+                color={isActive || tab.id === 'admin' ? '#10B981' : '#6B7280'}
               />
 
               {tab.badge !== undefined && (
@@ -52,6 +70,7 @@ export const BottomNav: React.FC = () => {
                   style={[
                     styles.badge,
                     tab.id === 'tracking' && styles.liveBadge,
+                    tab.id === 'admin' && styles.adminBadge,
                   ]}
                 >
                   <Text style={styles.badgeText}>{tab.badge}</Text>
@@ -62,7 +81,7 @@ export const BottomNav: React.FC = () => {
             <Text
               style={[
                 styles.tabLabel,
-                isActive && styles.tabLabelActive,
+                (isActive || tab.id === 'admin') && styles.tabLabelActive,
               ]}
             >
               {tab.label}
@@ -114,6 +133,10 @@ const styles = StyleSheet.create({
   liveBadge: {
     backgroundColor: '#10B981',
     minWidth: 28,
+  },
+  adminBadge: {
+    backgroundColor: '#059669',
+    minWidth: 26,
   },
   badgeText: {
     color: '#FFFFFF',

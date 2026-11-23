@@ -2,6 +2,8 @@ export interface LocalUser {
   id: number;
   name: string;
   mobile: string;
+  email?: string;
+  role?: 'user' | 'admin';
   password?: string;
   created_at?: string;
 }
@@ -40,6 +42,7 @@ const memoryStore = {
       id: 1,
       name: 'Shruti',
       mobile: '9876543210',
+      role: 'user',
       password: hashPassword('Password123'),
       created_at: new Date().toISOString(),
     },
@@ -47,7 +50,17 @@ const memoryStore = {
       id: 2,
       name: 'Ravalika',
       mobile: '9876500000',
+      role: 'user',
       password: hashPassword('Password123'),
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 999,
+      name: 'QuickMart Admin',
+      mobile: '9999999999',
+      email: 'admin@quickmart.com',
+      role: 'admin',
+      password: hashPassword('Admin@123'),
       created_at: new Date().toISOString(),
     },
   ] as LocalUser[],
@@ -99,17 +112,19 @@ export const registerUserDB = async (
 };
 
 /**
- * Authenticate user with mobile and password
+ * Authenticate user or admin with mobile/email and password
  */
 export const loginUserDB = async (
-  mobile: string,
+  identifier: string,
   plainPassword: string
 ): Promise<{ success: boolean; user?: LocalUser; error?: string }> => {
-  const cleanMobile = mobile.trim();
+  const cleanId = identifier.trim();
   const passwordHash = hashPassword(plainPassword);
 
   const user = memoryStore.users.find(
-    (u) => u.mobile === cleanMobile && u.password === passwordHash
+    (u) =>
+      (u.mobile === cleanId || (u.email && u.email.toLowerCase() === cleanId.toLowerCase())) &&
+      u.password === passwordHash
   );
 
   if (user) {
@@ -117,12 +132,14 @@ export const loginUserDB = async (
     return { success: true, user };
   }
 
-  const mobileExists = memoryStore.users.some((u) => u.mobile === cleanMobile);
-  if (mobileExists) {
+  const accountExists = memoryStore.users.some(
+    (u) => u.mobile === cleanId || (u.email && u.email.toLowerCase() === cleanId.toLowerCase())
+  );
+  if (accountExists) {
     return { success: false, error: 'Incorrect password entered' };
   }
 
-  return { success: false, error: 'No account registered with this mobile number' };
+  return { success: false, error: 'No account registered with this mobile number or email' };
 };
 
 /**
@@ -224,4 +241,8 @@ export const saveOrderDB = async (
 
 export const getOrdersDB = async (): Promise<any[]> => {
   return [...memoryStore.orders];
+};
+
+export const getUsersDB = async (): Promise<LocalUser[]> => {
+  return memoryStore.users.map(({ password, ...rest }) => rest);
 };

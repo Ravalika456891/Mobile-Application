@@ -26,6 +26,10 @@ export const ProfileScreen: React.FC = () => {
     logout,
     updateProfile,
     setAuthScreen,
+    isAdmin,
+    isAdminMode,
+    setIsAdminMode,
+    setInitialLoginMode,
   } = useApp();
 
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -151,6 +155,34 @@ export const ProfileScreen: React.FC = () => {
         </View>
       )}
 
+      {/* Admin Hub Direct Launch Banner (shown when user is Admin) */}
+      {isAdmin && (
+        <View style={styles.adminHubBannerCard}>
+          <View style={styles.adminHubBannerLeft}>
+            <View style={styles.adminHubShield}>
+              <Icon name="shield-checkmark" size={24} color="#059669" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.adminRoleRow}>
+                <Text style={styles.adminHubTitle}>Store Administrator</Text>
+                <View style={styles.adminLivePill}>
+                  <Text style={styles.adminLivePillText}>FULL ACCESS</Text>
+                </View>
+              </View>
+              <Text style={styles.adminHubDesc}>Manage catalog items, live stock, prices & active orders</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.adminHubLaunchBtn}
+            onPress={() => setIsAdminMode(true)}
+            activeOpacity={0.8}
+          >
+            <Icon name="speedometer-outline" size={16} color="#FFFFFF" />
+            <Text style={styles.adminHubLaunchText}>Open Admin Hub 🛡️</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Saved Addresses */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionTitleRow}>
@@ -265,6 +297,30 @@ export const ProfileScreen: React.FC = () => {
             <Text style={styles.menuText}>Payment Safety & Privacy</Text>
           </View>
           <Icon name="chevron-forward" size={16} color="#9CA3AF" />
+        </TouchableOpacity>
+
+        {/* Store Manager / Admin Portal row */}
+        <TouchableOpacity
+          style={[styles.menuRow, { borderTopWidth: 1, borderTopColor: '#F3F4F6' }]}
+          onPress={() => {
+            if (isAdmin) {
+              setIsAdminMode(true);
+            } else {
+              setInitialLoginMode('admin');
+              setAuthScreen('login');
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <View style={styles.menuLeft}>
+            <Icon name="shield-checkmark-outline" size={18} color="#059669" />
+            <Text style={[styles.menuText, { color: '#059669', fontWeight: '700' }]}>
+              {isAdmin ? 'Store Admin Hub' : 'Store Manager / Admin Portal'}
+            </Text>
+          </View>
+          <View style={styles.adminTagBadge}>
+            <Text style={styles.adminTagText}>{isAdmin ? 'MANAGE' : 'PORTAL'}</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -757,5 +813,86 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
+  },
+  adminHubBannerCard: {
+    backgroundColor: '#ECFDF5',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#A7F3D0',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  adminHubBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  adminHubShield: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#D1FAE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminRoleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  adminHubTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#065F46',
+  },
+  adminLivePill: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  adminLivePillText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  adminHubDesc: {
+    fontSize: 12,
+    color: '#047857',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  adminHubLaunchBtn: {
+    backgroundColor: '#059669',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  adminHubLaunchText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  adminTagBadge: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  adminTagText: {
+    color: '#059669',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });

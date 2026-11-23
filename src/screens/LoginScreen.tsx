@@ -17,9 +17,11 @@ import { useApp } from '../context/AppContext';
 import { resetPasswordDB } from '../services/database';
 
 export const LoginScreen: React.FC = () => {
-  const { login, setAuthScreen, showToast } = useApp();
+  const { login, setAuthScreen, showToast, initialLoginMode } = useApp();
 
+  const [loginRole, setLoginRole] = useState<'customer' | 'admin'>(initialLoginMode || 'customer');
   const [mobile, setMobile] = useState('');
+  const [adminIdentifier, setAdminIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,41 +35,77 @@ export const LoginScreen: React.FC = () => {
 
   const handleLogin = async () => {
     setErrorMessage(null);
-    const cleanMobile = mobile.replace(/\D/g, '');
 
-    if (!cleanMobile) {
-      setErrorMessage('Please enter your 10-digit mobile number.');
-      return;
-    }
+    if (loginRole === 'customer') {
+      const cleanMobile = mobile.replace(/\D/g, '');
 
-    if (cleanMobile.length !== 10) {
-      setErrorMessage('Mobile number must be exactly 10 digits.');
-      return;
-    }
-
-    if (!password.trim()) {
-      setErrorMessage('Please enter your account password.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await login(cleanMobile, password);
-      if (!res.success) {
-        setErrorMessage(res.error || 'Invalid credentials. Please try again.');
+      if (!cleanMobile) {
+        setErrorMessage('Please enter your 10-digit mobile number.');
+        return;
       }
-    } catch (err: any) {
-      setErrorMessage('An unexpected error occurred during login.');
-    } finally {
-      setLoading(false);
+
+      if (cleanMobile.length !== 10) {
+        setErrorMessage('Mobile number must be exactly 10 digits.');
+        return;
+      }
+
+      if (!password.trim()) {
+        setErrorMessage('Please enter your account password.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await login(cleanMobile, password);
+        if (!res.success) {
+          setErrorMessage(res.error || 'Invalid credentials. Please try again.');
+        }
+      } catch (err: any) {
+        setErrorMessage('An unexpected error occurred during login.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      const cleanId = adminIdentifier.trim();
+
+      if (!cleanId) {
+        setErrorMessage('Please enter your Admin Email or Mobile number.');
+        return;
+      }
+
+      if (!password.trim()) {
+        setErrorMessage('Please enter your Admin password.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await login(cleanId, password);
+        if (!res.success) {
+          setErrorMessage(res.error || 'Invalid admin credentials. Access denied.');
+        }
+      } catch (err: any) {
+        setErrorMessage('An unexpected error occurred during admin login.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const fillDemoCredentials = () => {
+    setLoginRole('customer');
     setMobile('9876543210');
     setPassword('Password123');
     setErrorMessage(null);
-    showToast('Demo credentials filled!');
+    showToast('Demo customer credentials filled!');
+  };
+
+  const fillDemoAdmin = () => {
+    setLoginRole('admin');
+    setAdminIdentifier('admin@quickmart.com');
+    setPassword('Admin@123');
+    setErrorMessage(null);
+    showToast('🛡️ Admin credentials filled!');
   };
 
   const handleResetPassword = async () => {
@@ -126,21 +164,95 @@ export const LoginScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* 1-Tap Demo Account Helper */}
-        <TouchableOpacity
-          style={styles.demoBanner}
-          onPress={fillDemoCredentials}
-          activeOpacity={0.8}
-        >
-          <Icon name="sparkles" size={18} color="#D97706" />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.demoBannerTitle}>Quick 1-Tap Demo Account</Text>
-            <Text style={styles.demoBannerText}>
-              Mobile: 9876543210 • Pass: Password123
+        {/* Role Switcher: Customer vs Store Admin */}
+        <View style={styles.roleSwitcherContainer}>
+          <TouchableOpacity
+            style={[
+              styles.roleSwitcherTab,
+              loginRole === 'customer' && styles.roleSwitcherTabActive,
+            ]}
+            onPress={() => {
+              setLoginRole('customer');
+              setErrorMessage(null);
+            }}
+            activeOpacity={0.8}
+          >
+            <Icon
+              name="person"
+              size={16}
+              color={loginRole === 'customer' ? '#059669' : '#6B7280'}
+            />
+            <Text
+              style={[
+                styles.roleSwitcherText,
+                loginRole === 'customer' && styles.roleSwitcherTextActive,
+              ]}
+            >
+              Customer Login
             </Text>
-          </View>
-          <Text style={styles.demoBannerAction}>Auto Fill</Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.roleSwitcherTab,
+              loginRole === 'admin' && styles.roleSwitcherTabAdminActive,
+            ]}
+            onPress={() => {
+              setLoginRole('admin');
+              setErrorMessage(null);
+            }}
+            activeOpacity={0.8}
+          >
+            <Icon
+              name="shield-checkmark"
+              size={16}
+              color={loginRole === 'admin' ? '#FFFFFF' : '#6B7280'}
+            />
+            <Text
+              style={[
+                styles.roleSwitcherText,
+                loginRole === 'admin' && styles.roleSwitcherTextAdminActive,
+              ]}
+            >
+              Store Admin
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 1-Tap Demo Account Helper */}
+        {loginRole === 'admin' ? (
+          <TouchableOpacity
+            style={styles.adminDemoBanner}
+            onPress={fillDemoAdmin}
+            activeOpacity={0.8}
+          >
+            <View style={styles.adminShieldBadge}>
+              <Icon name="shield-checkmark" size={18} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.adminDemoTitle}>1-Tap Store Admin Credentials</Text>
+              <Text style={styles.adminDemoText}>
+                admin@quickmart.com • Pass: Admin@123
+              </Text>
+            </View>
+            <Text style={styles.adminDemoAction}>Auto Fill</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.demoBanner}
+            onPress={fillDemoCredentials}
+            activeOpacity={0.8}
+          >
+            <Icon name="sparkles" size={18} color="#D97706" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.demoBannerTitle}>Quick 1-Tap Customer Demo</Text>
+              <Text style={styles.demoBannerText}>
+                Mobile: 9876543210 • Pass: Password123
+              </Text>
+            </View>
+            <Text style={styles.demoBannerAction}>Auto Fill</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Error Alert Box */}
         {errorMessage && (
@@ -152,49 +264,78 @@ export const LoginScreen: React.FC = () => {
 
         {/* Form Inputs */}
         <View style={styles.form}>
-          {/* Mobile Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Registered Mobile Number</Text>
-            <View style={styles.inputContainer}>
-              <View style={styles.countryCode}>
-                <Text style={styles.countryCodeText}>+91</Text>
+          {loginRole === 'customer' ? (
+            /* Customer Mobile Input */
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Registered Mobile Number</Text>
+              <View style={styles.inputContainer}>
+                <View style={styles.countryCode}>
+                  <Text style={styles.countryCodeText}>+91</Text>
+                </View>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="10-digit mobile number"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={mobile}
+                  onChangeText={(text) => {
+                    setMobile(text.replace(/\D/g, ''));
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                />
+                {mobile.length === 10 && (
+                  <Icon name="checkmark-circle" size={20} color="#10B981" />
+                )}
               </View>
-              <TextInput
-                style={styles.textInput}
-                placeholder="10-digit mobile number"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="phone-pad"
-                maxLength={10}
-                value={mobile}
-                onChangeText={(text) => {
-                  setMobile(text.replace(/\D/g, ''));
-                  if (errorMessage) setErrorMessage(null);
-                }}
-              />
-              {mobile.length === 10 && (
-                <Icon name="checkmark-circle" size={20} color="#10B981" />
-              )}
             </View>
-          </View>
+          ) : (
+            /* Admin Email / Mobile Input */
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Admin Email or Mobile</Text>
+              <View style={styles.inputContainer}>
+                <Icon name="person" size={20} color="#059669" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="admin@quickmart.com or 9999999999"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={adminIdentifier}
+                  onChangeText={(text) => {
+                    setAdminIdentifier(text);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                />
+                {adminIdentifier.length > 3 && (
+                  <Icon name="shield-checkmark" size={18} color="#059669" />
+                )}
+              </View>
+            </View>
+          )}
 
           {/* Password Input */}
           <View style={styles.inputGroup}>
             <View style={styles.passwordLabelRow}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setResetMobile(mobile);
-                  setForgotModalVisible(true);
-                }}
-              >
-                <Text style={styles.forgotText}>Forgot Password?</Text>
-              </TouchableOpacity>
+              <Text style={styles.inputLabel}>
+                {loginRole === 'admin' ? 'Admin Password' : 'Password'}
+              </Text>
+              {loginRole === 'customer' && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setResetMobile(mobile);
+                    setForgotModalVisible(true);
+                  }}
+                >
+                  <Text style={styles.forgotText}>Forgot Password?</Text>
+                </TouchableOpacity>
+              )}
             </View>
             <View style={styles.inputContainer}>
               <Icon name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 style={styles.textInput}
-                placeholder="Enter your password"
+                placeholder={loginRole === 'admin' ? 'Enter admin password' : 'Enter your password'}
                 placeholderTextColor="#9CA3AF"
                 secureTextEntry={!showPassword}
                 value={password}
@@ -218,7 +359,11 @@ export const LoginScreen: React.FC = () => {
 
           {/* Login Button */}
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.buttonDisabled]}
+            style={[
+              styles.submitButton,
+              loginRole === 'admin' && styles.adminSubmitButton,
+              loading && styles.buttonDisabled,
+            ]}
             onPress={handleLogin}
             disabled={loading}
             activeOpacity={0.85}
@@ -227,8 +372,14 @@ export const LoginScreen: React.FC = () => {
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <>
-                <Text style={styles.submitButtonText}>Log In</Text>
-                <Icon name="arrow-forward" size={18} color="#FFFFFF" />
+                <Text style={styles.submitButtonText}>
+                  {loginRole === 'admin' ? 'Access Admin Hub' : 'Log In'}
+                </Text>
+                <Icon
+                  name={loginRole === 'admin' ? 'shield-checkmark' : 'arrow-forward'}
+                  size={18}
+                  color="#FFFFFF"
+                />
               </>
             )}
           </TouchableOpacity>
@@ -363,6 +514,93 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 20,
     gap: 10,
+  },
+  roleSwitcherContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  roleSwitcherTab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    flexDirection: 'row',
+    gap: 6,
+  },
+  roleSwitcherTabActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  roleSwitcherTabAdminActive: {
+    backgroundColor: '#064E3B',
+    shadowColor: '#064E3B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  roleSwitcherText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
+  roleSwitcherTextActive: {
+    color: '#059669',
+  },
+  roleSwitcherTextAdminActive: {
+    color: '#FFFFFF',
+  },
+  adminDemoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1.5,
+    borderColor: '#A7F3D0',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 20,
+    gap: 10,
+  },
+  adminShieldBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#059669',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminDemoTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#065F46',
+  },
+  adminDemoText: {
+    fontSize: 11,
+    color: '#047857',
+    marginTop: 1,
+  },
+  adminDemoAction: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    backgroundColor: '#059669',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  adminSubmitButton: {
+    backgroundColor: '#064E3B',
+    shadowColor: '#064E3B',
   },
   demoBannerTitle: {
     fontSize: 12,

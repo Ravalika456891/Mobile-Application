@@ -22,6 +22,8 @@ export const Header: React.FC = () => {
     cartCount,
     currentUser,
     showToast,
+    isAdmin,
+    setIsAdminMode,
   } = useApp();
 
   const [addressModalVisible, setAddressModalVisible] = useState(false);
@@ -50,6 +52,17 @@ export const Header: React.FC = () => {
         </Text>
 
         <View style={styles.rightActionsRow}>
+          {isAdmin && (
+            <TouchableOpacity
+              style={styles.adminHeaderPill}
+              onPress={() => setIsAdminMode(true)}
+              activeOpacity={0.8}
+            >
+              <Icon name="shield-checkmark" size={13} color="#059669" />
+              <Text style={styles.adminHeaderPillText}>Admin Hub</Text>
+            </TouchableOpacity>
+          )}
+
           {activeOrder && activeOrder.status !== 'DELIVERED' && (
             <TouchableOpacity
               style={styles.liveOrderPill}
@@ -235,6 +248,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  adminHeaderPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    gap: 4,
+  },
+  adminHeaderPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#059669',
   },
   liveOrderPill: {
     flexDirection: 'row',
