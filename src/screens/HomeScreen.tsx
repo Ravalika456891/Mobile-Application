@@ -670,6 +670,48 @@ export const HomeScreen: React.FC = () => {
             </View>
           )}
 
+          {/* Section 4: Dairy, Milk & Farm Eggs Horizontal Section */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="water-outline" size={15} color="#3B82F6" />
+                    <Text style={styles.sectionHeading}>Dairy, Milk & Farm Eggs</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Fresh milk, dahi, paneer, butter, ghee & chilled milkshakes • 10-Min Delivery
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => setSelectedCategory('dairy')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#2563EB' }]}>View All Dairy</Text>
+                  <Icon name="chevron-forward" size={12} color="#2563EB" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {products
+                  .filter((p) => p.category === 'dairy')
+                  .slice(0, 10)
+                  .map((product) => (
+                    <ProductCard
+                      key={`dairy-row-${product.id}`}
+                      product={product}
+                      customWidth={165}
+                    />
+                  ))}
+              </ScrollView>
+            </View>
+          )}
+
           {/* Section Header: Popular Products / Filtered Catalog */}
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionTitleCol}>
