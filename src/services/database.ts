@@ -1,3 +1,7 @@
+import { Product, Category } from '../types';
+import { PRODUCTS, CATEGORIES } from '../data/products';
+import { SNACK_SUBCATEGORIES } from '../data/snacks';
+
 export interface LocalUser {
   id: number;
   name: string;
@@ -71,6 +75,7 @@ const memoryStore = {
     created_at: new Date().toISOString(),
   } as LocalUser | null,
   cart: [] as { product_id: string; quantity: number }[],
+  wishlist: [] as string[],
   orders: [] as StoredOrder[],
 };
 
@@ -245,4 +250,168 @@ export const getOrdersDB = async (): Promise<any[]> => {
 
 export const getUsersDB = async (): Promise<LocalUser[]> => {
   return memoryStore.users.map(({ password, ...rest }) => rest);
+};
+
+// ==========================================
+// SNACKS & SHOPPING DATABASE APIS
+// ==========================================
+
+/**
+ * GET all snack categories
+ */
+export const getSnackCategoriesDB = async (): Promise<Category[]> => {
+  return CATEGORIES.filter((c) => c.id === 'snacks' || c.id === 'all');
+};
+
+/**
+ * GET snack subcategories
+ */
+export const getSnackSubcategoriesDB = async (): Promise<string[]> => {
+  return [...SNACK_SUBCATEGORIES];
+};
+
+/**
+ * GET products by category
+ */
+export const getProductsByCategoryDB = async (category: string): Promise<Product[]> => {
+  if (category === 'all') return [...PRODUCTS];
+  return PRODUCTS.filter((p) => p.category === category);
+};
+
+/**
+ * GET products by subcategory
+ */
+export const getProductsBySubcategoryDB = async (
+  category: string,
+  subcategory: string
+): Promise<Product[]> => {
+  const prods = category === 'all' ? PRODUCTS : PRODUCTS.filter((p) => p.category === category);
+  if (!subcategory || subcategory === 'All' || subcategory === 'All Snacks' || subcategory === 'All Vegetables') {
+    return prods;
+  }
+  return prods.filter((p) => p.subcategory.toLowerCase() === subcategory.toLowerCase());
+};
+
+/**
+ * GET product details by ID
+ */
+export const getProductDetailsDB = async (productId: string): Promise<Product | null> => {
+  const found = PRODUCTS.find((p) => p.id === productId);
+  return found ? { ...found } : null;
+};
+
+/**
+ * GET products by brand
+ */
+export const getProductsByBrandDB = async (
+  category: string,
+  brand: string
+): Promise<Product[]> => {
+  const prods = category === 'all' ? PRODUCTS : PRODUCTS.filter((p) => p.category === category);
+  if (!brand || brand === 'All Brands') return prods;
+  return prods.filter((p) => p.brand && p.brand.toLowerCase() === brand.toLowerCase());
+};
+
+/**
+ * GET products by price range
+ */
+export const getProductsByPriceRangeDB = async (
+  category: string,
+  minPrice: number,
+  maxPrice: number
+): Promise<Product[]> => {
+  const prods = category === 'all' ? PRODUCTS : PRODUCTS.filter((p) => p.category === category);
+  return prods.filter((p) => p.price >= minPrice && p.price <= maxPrice);
+};
+
+/**
+ * GET search results
+ */
+export const searchProductsDB = async (
+  query: string,
+  category?: string
+): Promise<Product[]> => {
+  const q = query.trim().toLowerCase();
+  let prods = category && category !== 'all' ? PRODUCTS.filter((p) => p.category === category) : PRODUCTS;
+  if (!q) return prods;
+  return prods.filter(
+    (p) =>
+      p.name.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q) ||
+      p.subcategory.toLowerCase().includes(q) ||
+      (p.brand && p.brand.toLowerCase().includes(q)) ||
+      (p.flavour && p.flavour.toLowerCase().includes(q)) ||
+      p.tags?.some((t) => t.toLowerCase().includes(q))
+  );
+};
+
+/**
+ * POST add to cart
+ */
+export const addToCartDB = async (
+  productId: string,
+  quantity = 1
+): Promise<{ success: boolean; cart: { product_id: string; quantity: number }[] }> => {
+  const existing = memoryStore.cart.find((item) => item.product_id === productId);
+  if (existing) {
+    existing.quantity += quantity;
+  } else {
+    memoryStore.cart.push({ product_id: productId, quantity });
+  }
+  return { success: true, cart: [...memoryStore.cart] };
+};
+
+/**
+ * PUT update cart quantity
+ */
+export const updateCartQuantityDB = async (
+  productId: string,
+  quantity: number
+): Promise<{ success: boolean; cart: { product_id: string; quantity: number }[] }> => {
+  if (quantity <= 0) {
+    memoryStore.cart = memoryStore.cart.filter((item) => item.product_id !== productId);
+  } else {
+    const existing = memoryStore.cart.find((item) => item.product_id === productId);
+    if (existing) {
+      existing.quantity = quantity;
+    } else {
+      memoryStore.cart.push({ product_id: productId, quantity });
+    }
+  }
+  return { success: true, cart: [...memoryStore.cart] };
+};
+
+/**
+ * DELETE remove from cart
+ */
+export const removeFromCartDB = async (
+  productId: string
+): Promise<{ success: boolean; cart: { product_id: string; quantity: number }[] }> => {
+  memoryStore.cart = memoryStore.cart.filter((item) => item.product_id !== productId);
+  return { success: true, cart: [...memoryStore.cart] };
+};
+
+/**
+ * POST add to wishlist / toggle
+ */
+export const toggleWishlistDB = async (
+  productId: string
+): Promise<{ success: boolean; inWishlist: boolean; wishlist: string[] }> => {
+  const index = memoryStore.wishlist.indexOf(productId);
+  let inWishlist = false;
+  if (index > -1) {
+    memoryStore.wishlist.splice(index, 1);
+    inWishlist = false;
+  } else {
+    memoryStore.wishlist.push(productId);
+    inWishlist = true;
+  }
+  return { success: true, inWishlist, wishlist: [...memoryStore.wishlist] };
+};
+
+/**
+ * GET wishlist
+ */
+export const getWishlistDB = async (): Promise<string[]> => {
+  return [...memoryStore.wishlist];
 };

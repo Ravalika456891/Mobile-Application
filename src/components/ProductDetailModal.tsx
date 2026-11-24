@@ -143,6 +143,30 @@ export const ProductDetailModal: React.FC = () => {
               </View>
             )}
 
+            {/* Dietary Badges */}
+            {(selectedProduct.isVeg || selectedProduct.isVegan || selectedProduct.isJainFriendly) && (
+              <View style={styles.dietaryRow}>
+                {selectedProduct.isVeg && (
+                  <View style={styles.dietBadgeVeg}>
+                    <View style={styles.greenDietDot} />
+                    <Text style={styles.dietBadgeVegText}>Vegetarian</Text>
+                  </View>
+                )}
+                {selectedProduct.isVegan && (
+                  <View style={styles.dietBadgeVegan}>
+                    <Icon name="leaf" size={11} color="#059669" />
+                    <Text style={styles.dietBadgeVeganText}>Vegan</Text>
+                  </View>
+                )}
+                {selectedProduct.isJainFriendly && (
+                  <View style={styles.dietBadgeJain}>
+                    <Icon name="shield-checkmark" size={11} color="#D97706" />
+                    <Text style={styles.dietBadgeJainText}>Jain-Friendly</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
             {/* Title & Weight */}
             <Text style={styles.title}>{selectedProduct.name}</Text>
             <Text style={styles.weight}>{displayWeightOrSize}</Text>
@@ -621,6 +645,66 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   flavourBadgeText: {
+    color: '#92400E',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  dietaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  dietBadgeVeg: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  greenDietDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#059669',
+  },
+  dietBadgeVegText: {
+    color: '#065F46',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  dietBadgeVegan: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+  },
+  dietBadgeVeganText: {
+    color: '#166534',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  dietBadgeJain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  dietBadgeJainText: {
     color: '#92400E',
     fontSize: 11,
     fontWeight: '700',

@@ -17,6 +17,14 @@ import {
   VEGETABLE_SUBCATEGORIES,
   VegetableSubcategory,
 } from '../data/products';
+import {
+  SNACK_SUBCATEGORIES,
+  SNACK_BRANDS,
+  SNACK_FLAVOURS,
+  SNACK_PRICE_RANGES,
+  SNACK_DIETARY_PREFERENCES,
+  SNACK_SORT_OPTIONS,
+} from '../data/snacks';
 import { Product } from '../types';
 
 type VegSortOption = 'popular' | 'price-asc' | 'price-desc' | 'rating';
@@ -39,6 +47,16 @@ export const HomeScreen: React.FC = () => {
     useState<VegetableSubcategory>('All Vegetables');
   const [vegSearchQuery, setVegSearchQuery] = useState('');
   const [vegSortBy, setVegSortBy] = useState<VegSortOption>('popular');
+
+  // Dedicated Snacks Screen States
+  const [selectedSnackSubcategory, setSelectedSnackSubcategory] =
+    useState<string>('All Snacks');
+  const [snackSearchQuery, setSnackSearchQuery] = useState('');
+  const [snackBrandFilter, setSnackBrandFilter] = useState('All Brands');
+  const [snackPriceFilter, setSnackPriceFilter] = useState('All Prices');
+  const [snackFlavourFilter, setSnackFlavourFilter] = useState('All Flavours');
+  const [snackDietaryFilter, setSnackDietaryFilter] = useState('All');
+  const [snackSortBy, setSnackSortBy] = useState('Popularity');
 
   const isSearching = searchQuery.trim().length > 0;
 
@@ -116,6 +134,153 @@ export const HomeScreen: React.FC = () => {
     filterFastDelivery,
     vegSortBy,
   ]);
+
+  // Dedicated Snacks Products List
+  const snackProducts = useMemo(() => {
+    return products.filter((p) => p.category === 'snacks');
+  }, [products]);
+
+  // Filtered & Sorted Snacks List for Dedicated Snacks View
+  const processedSnacks = useMemo(() => {
+    let list = snackProducts;
+
+    // Subcategory filter
+    if (selectedSnackSubcategory !== 'All Snacks') {
+      list = list.filter(
+        (p) => p.subcategory.toLowerCase() === selectedSnackSubcategory.toLowerCase()
+      );
+    }
+
+    // In-category search filter
+    if (snackSearchQuery.trim().length > 0) {
+      const q = snackSearchQuery.toLowerCase().trim();
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.subcategory.toLowerCase().includes(q) ||
+          (p.brand && p.brand.toLowerCase().includes(q)) ||
+          (p.flavour && p.flavour.toLowerCase().includes(q)) ||
+          p.tags?.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+
+    // Brand filter
+    if (snackBrandFilter !== 'All Brands') {
+      list = list.filter(
+        (p) => p.brand && p.brand.toLowerCase() === snackBrandFilter.toLowerCase()
+      );
+    }
+
+    // Price filter
+    if (snackPriceFilter === 'Under ₹10') {
+      list = list.filter((p) => p.price <= 10);
+    } else if (snackPriceFilter === '₹10–₹50') {
+      list = list.filter((p) => p.price >= 10 && p.price <= 50);
+    } else if (snackPriceFilter === '₹50–₹100') {
+      list = list.filter((p) => p.price > 50 && p.price <= 100);
+    } else if (snackPriceFilter === '₹100–₹200') {
+      list = list.filter((p) => p.price > 100 && p.price <= 200);
+    } else if (snackPriceFilter === 'Above ₹200') {
+      list = list.filter((p) => p.price > 200);
+    }
+
+    // Flavour filter
+    if (snackFlavourFilter !== 'All Flavours') {
+      list = list.filter(
+        (p) => p.flavour && p.flavour.toLowerCase() === snackFlavourFilter.toLowerCase()
+      );
+    }
+
+    // Dietary preferences filter
+    if (snackDietaryFilter === 'Vegetarian') {
+      list = list.filter((p) => p.isVeg === true);
+    } else if (snackDietaryFilter === 'Vegan') {
+      list = list.filter((p) => p.isVegan === true);
+    } else if (snackDietaryFilter === 'Jain-friendly') {
+      list = list.filter((p) => p.isJainFriendly === true);
+    }
+
+    // Fast delivery filter
+    if (filterFastDelivery) {
+      list = list.filter((p) => p.deliveryTimeMins <= 10);
+    }
+
+    // Sorting
+    const sorted = [...list];
+    switch (snackSortBy) {
+      case 'Price: Low to High':
+        sorted.sort((a, b) => a.price - b.price);
+        break;
+      case 'Price: High to Low':
+        sorted.sort((a, b) => b.price - a.price);
+        break;
+      case 'Discount':
+        sorted.sort((a, b) => {
+          const discA = a.originalPrice ? (a.originalPrice - a.price) / a.originalPrice : 0;
+          const discB = b.originalPrice ? (b.originalPrice - b.price) / b.originalPrice : 0;
+          return discB - discA;
+        });
+        break;
+      case 'New Arrivals':
+        sorted.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        break;
+      case 'Popularity':
+      default:
+        sorted.sort((a, b) => b.reviewsCount - a.reviewsCount);
+        break;
+    }
+    return sorted;
+  }, [
+    snackProducts,
+    selectedSnackSubcategory,
+    snackSearchQuery,
+    snackBrandFilter,
+    snackPriceFilter,
+    snackFlavourFilter,
+    snackDietaryFilter,
+    filterFastDelivery,
+    snackSortBy,
+  ]);
+
+  // Promotional Carousels for Homepage (Section 8 Prompt)
+  const bestsellingChips = useMemo(
+    () => snackProducts.filter((p) => p.subcategory === 'Chips & Crisps'),
+    [snackProducts]
+  );
+
+  const chocolateLovers = useMemo(
+    () => snackProducts.filter((p) => p.subcategory === 'Chocolates'),
+    [snackProducts]
+  );
+
+  const snacksUnder50 = useMemo(
+    () => snackProducts.filter((p) => p.price <= 50),
+    [snackProducts]
+  );
+
+  const popularNamkeen = useMemo(
+    () => snackProducts.filter((p) => p.subcategory === 'Namkeen & Indian Snacks'),
+    [snackProducts]
+  );
+
+  const healthySnacks = useMemo(
+    () => snackProducts.filter((p) => p.subcategory === 'Healthy Snacks'),
+    [snackProducts]
+  );
+
+  const newSnackArrivals = useMemo(
+    () =>
+      [...snackProducts]
+        .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+        .slice(0, 10),
+    [snackProducts]
+  );
+
+  const specialSnackCombos = useMemo(
+    () => snackProducts.filter((p) => p.tags?.some((t) => t.toLowerCase().includes('combo'))),
+    [snackProducts]
+  );
 
   // General Filtered Products (for search and non-vegetables categories)
   const filteredProducts = useMemo(() => {
@@ -199,7 +364,40 @@ export const HomeScreen: React.FC = () => {
     return vegetableProducts.filter((p) => p.subcategory === sub).length;
   };
 
+  const getSnackSubcategoryCount = (sub: string) => {
+    if (sub === 'All Snacks') return snackProducts.length;
+    return snackProducts.filter((p) => p.subcategory.toLowerCase() === sub.toLowerCase()).length;
+  };
+
+  const getSnackSubcategoryIcon = (subcat: string) => {
+    switch (subcat) {
+      case 'Chips & Crisps':
+        return 'disc-outline';
+      case 'Extruded Snacks & Puffs':
+        return 'sparkles';
+      case 'Chocolates':
+        return 'heart';
+      case 'Biscuits & Cookies':
+        return 'cafe-outline';
+      case 'Namkeen & Indian Snacks':
+        return 'flame';
+      case 'Popcorn & Nachos':
+        return 'film-outline';
+      case 'Candies & Toffees':
+        return 'color-wand-outline';
+      case 'Cakes & Bakery Snacks':
+        return 'gift-outline';
+      case 'Healthy Snacks':
+        return 'leaf';
+      case 'Instant & Ready-to-Eat Snacks':
+        return 'timer-outline';
+      default:
+        return 'fast-food-outline';
+    }
+  };
+
   const isVegetablesCategory = selectedCategory === 'vegetables' && !isSearching;
+  const isSnacksCategory = selectedCategory === 'snacks' && !isSearching;
 
   return (
     <ScrollView
@@ -479,9 +677,425 @@ export const HomeScreen: React.FC = () => {
             </View>
           )}
         </View>
+      ) : isSnacksCategory ? (
+        /* ============================================================ */
+        /* CASE B: DEDICATED SNACKS & MUNCHIES CATEGORY VIEW            */
+        /* ============================================================ */
+        <View style={styles.snackScreenContainer}>
+          {/* Back Navigation Bar */}
+          <View style={styles.categoryNavRow}>
+            <TouchableOpacity
+              style={styles.snackBackPill}
+              onPress={() => setSelectedCategory('all')}
+              activeOpacity={0.7}
+            >
+              <Icon name="arrow-back" size={16} color="#DB2777" />
+              <Text style={styles.snackBackPillText}>All Departments</Text>
+            </TouchableOpacity>
+
+            <View style={styles.snackTotalBadge}>
+              <Icon name="fast-food-outline" size={13} color="#DB2777" />
+              <Text style={styles.snackTotalBadgeText}>{snackProducts.length} Crunchy Snacks</Text>
+            </View>
+          </View>
+
+          {/* Dedicated Category Hero Banner */}
+          <View style={styles.snackHeroBanner}>
+            <View style={styles.snackHeroTextCol}>
+              <View style={styles.snackBadgeTag}>
+                <Icon name="flash" size={12} color="#FFFFFF" />
+                <Text style={styles.snackBadgeTagText}>10-MIN MUNCHIES DELIVERY • 100% QUALITY</Text>
+              </View>
+              <Text style={styles.snackHeroTitle}>Snacks & Munchies</Text>
+              <Text style={styles.snackHeroSub}>
+                Crispy chips, chocolates, spicy namkeen, biscuits & healthy snacks delivered in 10 mins
+              </Text>
+            </View>
+          </View>
+
+          {/* In-Category Search Box */}
+          <View style={styles.snackSearchBox}>
+            <Icon name="search-outline" size={17} color="#6B7280" />
+            <TextInput
+              style={styles.snackSearchInput}
+              placeholder="Search in 60+ snacks (e.g. Lay's, KitKat, Kurkure, Makhana)..."
+              placeholderTextColor="#9CA3AF"
+              value={snackSearchQuery}
+              onChangeText={setSnackSearchQuery}
+              returnKeyType="search"
+            />
+            {snackSearchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSnackSearchQuery('')}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Icon name="close-circle" size={17} color="#9CA3AF" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Subcategories Horizontal Scroll (All 10 Subcategories) */}
+          <View style={styles.subcatSection}>
+            <Text style={styles.filterSectionTitle}>Subcategories</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.subcatScroll}
+            >
+              {SNACK_SUBCATEGORIES.map((subcat) => {
+                const isSelected = selectedSnackSubcategory === subcat;
+                const count = getSnackSubcategoryCount(subcat);
+                const iconName = getSnackSubcategoryIcon(subcat);
+                return (
+                  <TouchableOpacity
+                    key={subcat}
+                    style={[
+                      styles.snackSubcatPill,
+                      isSelected && styles.snackSubcatPillActive,
+                    ]}
+                    onPress={() => setSelectedSnackSubcategory(subcat)}
+                    activeOpacity={0.75}
+                  >
+                    <Icon
+                      name={iconName}
+                      size={14}
+                      color={isSelected ? '#FFFFFF' : '#DB2777'}
+                    />
+                    <Text
+                      style={[
+                        styles.subcatPillText,
+                        isSelected && styles.subcatPillTextActive,
+                      ]}
+                    >
+                      {subcat}
+                    </Text>
+                    <View
+                      style={[
+                        styles.subcatCountBadge,
+                        isSelected && styles.subcatCountBadgeActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.subcatCountText,
+                          isSelected && styles.subcatCountTextActive,
+                        ]}
+                      >
+                        {count}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Brand Filter (Prompt Requirement 4) */}
+          <View style={styles.filterRowSection}>
+            <Text style={styles.filterSectionTitle}>Brand</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterScroll}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.filterPill,
+                  snackBrandFilter === 'All Brands' && styles.filterPillActive,
+                ]}
+                onPress={() => setSnackBrandFilter('All Brands')}
+                activeOpacity={0.75}
+              >
+                <Text
+                  style={[
+                    styles.filterPillText,
+                    snackBrandFilter === 'All Brands' && styles.filterPillTextActive,
+                  ]}
+                >
+                  All Brands
+                </Text>
+              </TouchableOpacity>
+              {SNACK_BRANDS.map((brand) => {
+                const isSelected = snackBrandFilter === brand;
+                return (
+                  <TouchableOpacity
+                    key={brand}
+                    style={[styles.filterPill, isSelected && styles.filterPillActive]}
+                    onPress={() => setSnackBrandFilter(brand)}
+                    activeOpacity={0.75}
+                  >
+                    <Text
+                      style={[
+                        styles.filterPillText,
+                        isSelected && styles.filterPillTextActive,
+                      ]}
+                    >
+                      {brand}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Price Range Filter (Prompt Requirement 4) */}
+          <View style={styles.filterRowSection}>
+            <Text style={styles.filterSectionTitle}>Price Range</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterScroll}
+            >
+              {SNACK_PRICE_RANGES.map((range) => {
+                const isSelected = snackPriceFilter === range;
+                return (
+                  <TouchableOpacity
+                    key={range}
+                    style={[styles.filterPill, isSelected && styles.filterPillActive]}
+                    onPress={() => setSnackPriceFilter(range)}
+                    activeOpacity={0.75}
+                  >
+                    <Text
+                      style={[
+                        styles.filterPillText,
+                        isSelected && styles.filterPillTextActive,
+                      ]}
+                    >
+                      {range}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Flavour Filter (Prompt Requirement 4) */}
+          <View style={styles.filterRowSection}>
+            <Text style={styles.filterSectionTitle}>Flavour</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterScroll}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.filterPill,
+                  snackFlavourFilter === 'All Flavours' && styles.filterPillActive,
+                ]}
+                onPress={() => setSnackFlavourFilter('All Flavours')}
+                activeOpacity={0.75}
+              >
+                <Text
+                  style={[
+                    styles.filterPillText,
+                    snackFlavourFilter === 'All Flavours' && styles.filterPillTextActive,
+                  ]}
+                >
+                  All Flavours
+                </Text>
+              </TouchableOpacity>
+              {SNACK_FLAVOURS.map((flav) => {
+                const isSelected = snackFlavourFilter === flav;
+                return (
+                  <TouchableOpacity
+                    key={flav}
+                    style={[styles.filterPill, isSelected && styles.filterPillActive]}
+                    onPress={() => setSnackFlavourFilter(flav)}
+                    activeOpacity={0.75}
+                  >
+                    <Text
+                      style={[
+                        styles.filterPillText,
+                        isSelected && styles.filterPillTextActive,
+                      ]}
+                    >
+                      {flav}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Dietary Preferences Filter (Prompt Requirement 4) */}
+          <View style={styles.filterRowSection}>
+            <Text style={styles.filterSectionTitle}>Dietary Preference</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterScroll}
+            >
+              {SNACK_DIETARY_PREFERENCES.map((diet) => {
+                const isSelected = snackDietaryFilter === diet;
+                return (
+                  <TouchableOpacity
+                    key={diet}
+                    style={[
+                      styles.filterPill,
+                      isSelected && styles.dietaryPillActive,
+                    ]}
+                    onPress={() => setSnackDietaryFilter(diet)}
+                    activeOpacity={0.75}
+                  >
+                    {diet === 'Vegetarian' && (
+                      <View style={styles.miniVegDot} />
+                    )}
+                    {diet === 'Vegan' && (
+                      <Icon name="leaf" size={11} color={isSelected ? '#FFF' : '#059669'} />
+                    )}
+                    {diet === 'Jain-friendly' && (
+                      <Icon name="shield-checkmark" size={11} color={isSelected ? '#FFF' : '#D97706'} />
+                    )}
+                    <Text
+                      style={[
+                        styles.filterPillText,
+                        isSelected && styles.filterPillTextActive,
+                      ]}
+                    >
+                      {diet}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Sort By Section (Prompt Requirement 4) */}
+          <View style={styles.sortSection}>
+            <Text style={styles.filterSectionTitle}>Sort By</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.sortScroll}
+            >
+              {SNACK_SORT_OPTIONS.map((sortOpt) => {
+                const isSelected = snackSortBy === sortOpt;
+                return (
+                  <TouchableOpacity
+                    key={sortOpt}
+                    style={[styles.sortPill, isSelected && styles.sortPillActive]}
+                    onPress={() => setSnackSortBy(sortOpt)}
+                    activeOpacity={0.75}
+                  >
+                    {sortOpt === 'Popularity' && (
+                      <Icon
+                        name="flame"
+                        size={12}
+                        color={isSelected ? '#FFFFFF' : '#4B5563'}
+                      />
+                    )}
+                    {sortOpt === 'Price: Low to High' && (
+                      <Icon
+                        name="arrow-up"
+                        size={12}
+                        color={isSelected ? '#FFFFFF' : '#4B5563'}
+                      />
+                    )}
+                    {sortOpt === 'Price: High to Low' && (
+                      <Icon
+                        name="arrow-down"
+                        size={12}
+                        color={isSelected ? '#FFFFFF' : '#4B5563'}
+                      />
+                    )}
+                    {sortOpt === 'New Arrivals' && (
+                      <Icon
+                        name="sparkles"
+                        size={12}
+                        color={isSelected ? '#FFFFFF' : '#4B5563'}
+                      />
+                    )}
+                    {sortOpt === 'Discount' && (
+                      <Icon
+                        name="pricetag"
+                        size={12}
+                        color={isSelected ? '#FFFFFF' : '#4B5563'}
+                      />
+                    )}
+                    <Text
+                      style={[
+                        styles.sortPillText,
+                        isSelected && styles.sortPillTextActive,
+                      ]}
+                    >
+                      {sortOpt}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Active Filter Counter & Reset Bar */}
+          <View style={styles.activeFilterBar}>
+            <Text style={styles.activeFilterCountText}>
+              Showing <Text style={{ fontWeight: '800', color: '#111827' }}>{processedSnacks.length}</Text> snacks
+            </Text>
+            {(selectedSnackSubcategory !== 'All Snacks' ||
+              snackSearchQuery !== '' ||
+              snackBrandFilter !== 'All Brands' ||
+              snackPriceFilter !== 'All Prices' ||
+              snackFlavourFilter !== 'All Flavours' ||
+              snackDietaryFilter !== 'All' ||
+              snackSortBy !== 'Popularity') && (
+              <TouchableOpacity
+                style={styles.snackResetPill}
+                onPress={() => {
+                  setSelectedSnackSubcategory('All Snacks');
+                  setSnackSearchQuery('');
+                  setSnackBrandFilter('All Brands');
+                  setSnackPriceFilter('All Prices');
+                  setSnackFlavourFilter('All Flavours');
+                  setSnackDietaryFilter('All');
+                  setSnackSortBy('Popularity');
+                }}
+                activeOpacity={0.7}
+              >
+                <Icon name="refresh-outline" size={13} color="#DB2777" />
+                <Text style={styles.snackResetPillText}>Reset Filters</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Product Grid or Empty State */}
+          {processedSnacks.length === 0 ? (
+            <View style={styles.emptyResults}>
+              <View style={styles.emptyIconCircle}>
+                <Icon name="search-outline" size={32} color="#9CA3AF" />
+              </View>
+              <Text style={styles.emptyTitle}>No snacks match your filters</Text>
+              <Text style={styles.emptySub}>
+                Try selecting a different brand, flavour, or clearing price filters.
+              </Text>
+              <TouchableOpacity
+                style={styles.resetSnackButton}
+                onPress={() => {
+                  setSelectedSnackSubcategory('All Snacks');
+                  setSnackSearchQuery('');
+                  setSnackBrandFilter('All Brands');
+                  setSnackPriceFilter('All Prices');
+                  setSnackFlavourFilter('All Flavours');
+                  setSnackDietaryFilter('All');
+                  setSnackSortBy('Popularity');
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.resetSearchButtonText}>
+                  Show All {snackProducts.length} Snacks
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.gridContainer}>
+              {processedSnacks.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </View>
+          )}
+        </View>
       ) : (
         /* ============================================================ */
-        /* CASE B: STANDARD SHOP HOMEPAGE & OTHER CATEGORIES            */
+        /* CASE C: STANDARD SHOP HOMEPAGE & OTHER CATEGORIES            */
         /* ============================================================ */
         <View>
           {/* Promotional Banners Section (hidden while searching) */}
@@ -792,6 +1406,356 @@ export const HomeScreen: React.FC = () => {
                       customWidth={165}
                     />
                   ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* ============================================================ */}
+          {/* HOMEPAGE SNACKS & MUNCHIES PROMOTIONAL SECTIONS (PROMPT 8)    */}
+          {/* ============================================================ */}
+
+          {/* 1. Snacks & Munchies Subcategory Explore Bar */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="fast-food-outline" size={16} color="#DB2777" />
+                    <Text style={styles.sectionHeading}>Snacks & Munchies</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    10 subcategories: Chips, chocolates, namkeen, biscuits & healthy snacks • 10-Min Delivery
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => setSelectedCategory('snacks')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#DB2777' }]}>Explore All</Text>
+                  <Icon name="chevron-forward" size={12} color="#DB2777" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {SNACK_SUBCATEGORIES.filter((sub) => sub !== 'All Snacks').map((subcat) => {
+                  const count = getSnackSubcategoryCount(subcat);
+                  const iconName = getSnackSubcategoryIcon(subcat);
+                  return (
+                    <TouchableOpacity
+                      key={`home-sub-${subcat}`}
+                      style={styles.snackSubcatCard}
+                      onPress={() => {
+                        setSelectedSnackSubcategory(subcat);
+                        setSelectedCategory('snacks');
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.snackSubcatIconCircle}>
+                        <Icon name={iconName} size={20} color="#DB2777" />
+                      </View>
+                      <Text style={styles.snackSubcatCardTitle} numberOfLines={2}>
+                        {subcat}
+                      </Text>
+                      <Text style={styles.snackSubcatCardCount}>{count} Items</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* 2. Bestselling Chips */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="disc-outline" size={15} color="#E11D48" />
+                    <Text style={styles.sectionHeading}>Bestselling Chips & Crisps</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Lay's, Uncle Chipps, Bingo, Pringles, Too Yumm! & Banana Chips
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => {
+                    setSelectedSnackSubcategory('Chips & Crisps');
+                    setSelectedCategory('snacks');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#E11D48' }]}>View All Chips</Text>
+                  <Icon name="chevron-forward" size={12} color="#E11D48" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {bestsellingChips.map((product) => (
+                  <ProductCard
+                    key={`chips-row-${product.id}`}
+                    product={product}
+                    customWidth={165}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* 3. Chocolate Lovers */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="heart" size={15} color="#9333EA" />
+                    <Text style={styles.sectionHeading}>Chocolate Lovers Paradise</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Cadbury Silk, KitKat, 5 Star, Ferrero Rocher, Amul & Bournville
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => {
+                    setSelectedSnackSubcategory('Chocolates');
+                    setSelectedCategory('snacks');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#9333EA' }]}>View All Chocolates</Text>
+                  <Icon name="chevron-forward" size={12} color="#9333EA" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {chocolateLovers.map((product) => (
+                  <ProductCard
+                    key={`choco-row-${product.id}`}
+                    product={product}
+                    customWidth={165}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* 4. Snacks Under ₹50 */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="pricetag" size={15} color="#059669" />
+                    <Text style={styles.sectionHeading}>Snacks Under ₹50</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Budget-friendly cravings: Parle-G, Maggi, Kurkure, Perk, Crax & Pulse
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => {
+                    setSnackPriceFilter('Under ₹10');
+                    setSelectedCategory('snacks');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#059669' }]}>View Budget Snacks</Text>
+                  <Icon name="chevron-forward" size={12} color="#059669" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {snacksUnder50.slice(0, 10).map((product) => (
+                  <ProductCard
+                    key={`under50-row-${product.id}`}
+                    product={product}
+                    customWidth={165}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* 5. Popular Indian Namkeen */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="flame" size={15} color="#D97706" />
+                    <Text style={styles.sectionHeading}>Popular Indian Namkeen</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Haldiram's Aloo Bhujia, Khatta Meetha, Ratlami Sev, Moong Dal & Murukku
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => {
+                    setSelectedSnackSubcategory('Namkeen & Indian Snacks');
+                    setSelectedCategory('snacks');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#D97706' }]}>View All Namkeen</Text>
+                  <Icon name="chevron-forward" size={12} color="#D97706" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {popularNamkeen.map((product) => (
+                  <ProductCard
+                    key={`namkeen-row-${product.id}`}
+                    product={product}
+                    customWidth={165}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* 6. Healthy Snacking */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="leaf" size={15} color="#10B981" />
+                    <Text style={styles.sectionHeading}>Healthy Snacking</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Farmley Makhana, Protein Bars, Yoga Bar, Super Seeds & Roasted Almonds
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => {
+                    setSelectedSnackSubcategory('Healthy Snacks');
+                    setSelectedCategory('snacks');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#10B981' }]}>View Healthy Snacks</Text>
+                  <Icon name="chevron-forward" size={12} color="#10B981" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {healthySnacks.map((product) => (
+                  <ProductCard
+                    key={`healthy-row-${product.id}`}
+                    product={product}
+                    customWidth={165}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* 7. New Arrivals */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="sparkles" size={15} color="#8B5CF6" />
+                    <Text style={styles.sectionHeading}>New Arrivals in Munchies</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Freshly stocked crunchy treats & newly released snacks
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => {
+                    setSnackSortBy('New Arrivals');
+                    setSelectedCategory('snacks');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#8B5CF6' }]}>View New Arrivals</Text>
+                  <Icon name="chevron-forward" size={12} color="#8B5CF6" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {newSnackArrivals.map((product) => (
+                  <ProductCard
+                    key={`new-snack-row-${product.id}`}
+                    product={product}
+                    customWidth={165}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* 8. Special Snack Combos */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="gift-outline" size={15} color="#F59E0B" />
+                    <Text style={styles.sectionHeading}>Special Snack Combos</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Movie Night & Chai-Time curated combos with bundled savings
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => setSelectedCategory('snacks')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#F59E0B' }]}>View All Combos</Text>
+                  <Icon name="chevron-forward" size={12} color="#F59E0B" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {specialSnackCombos.map((product) => (
+                  <ProductCard
+                    key={`combo-row-${product.id}`}
+                    product={product}
+                    customWidth={165}
+                  />
+                ))}
               </ScrollView>
             </View>
           )}
@@ -1254,5 +2218,222 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 2,
     textAlign: 'center',
+  },
+
+  // Dedicated Snacks Screen Styles
+  snackScreenContainer: {
+    paddingBottom: 16,
+  },
+  snackBackPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FCE7F3',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  snackBackPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#DB2777',
+  },
+  snackTotalBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 5,
+    borderWidth: 1,
+    borderColor: '#FBCFE8',
+  },
+  snackTotalBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#BE185D',
+  },
+  snackHeroBanner: {
+    backgroundColor: '#BE185D',
+    marginHorizontal: 14,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  snackHeroTextCol: {
+    gap: 4,
+  },
+  snackBadgeTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    gap: 4,
+    marginBottom: 4,
+  },
+  snackBadgeTagText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  snackHeroTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  snackHeroSub: {
+    fontSize: 12,
+    color: '#FCE7F3',
+    lineHeight: 17,
+  },
+  snackSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1.2,
+    borderColor: '#E5E7EB',
+    gap: 8,
+    marginBottom: 12,
+  },
+  snackSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#1F2937',
+    padding: 0,
+  },
+  snackSubcatPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.2,
+    borderColor: '#FBCFE8',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    gap: 6,
+  },
+  snackSubcatPillActive: {
+    backgroundColor: '#DB2777',
+    borderColor: '#DB2777',
+  },
+  filterRowSection: {
+    marginBottom: 10,
+  },
+  filterScroll: {
+    paddingHorizontal: 14,
+    gap: 6,
+    paddingBottom: 4,
+  },
+  filterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 5,
+  },
+  filterPillActive: {
+    backgroundColor: '#DB2777',
+    borderColor: '#DB2777',
+  },
+  dietaryPillActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  miniVegDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#059669',
+  },
+  filterPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  filterPillTextActive: {
+    color: '#FFFFFF',
+  },
+  activeFilterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 6,
+  },
+  activeFilterCountText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  snackResetPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FCE7F3',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  snackResetPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#DB2777',
+  },
+  resetSnackButton: {
+    backgroundColor: '#DB2777',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  snackSubcatCard: {
+    width: 115,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F3E8FF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  snackSubcatIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FCE7F3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  snackSubcatCardTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#1F2937',
+    textAlign: 'center',
+    lineHeight: 14,
+    minHeight: 28,
+  },
+  snackSubcatCardCount: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#DB2777',
+    marginTop: 4,
   },
 });

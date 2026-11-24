@@ -5,6 +5,27 @@ import {
   VEGETABLE_SUBCATEGORIES,
   VegetableSubcategory,
 } from './vegetables';
+import {
+  SNACKS_PRODUCTS,
+  SNACK_SUBCATEGORIES,
+  SnackSubcategory,
+  SNACK_BRANDS,
+  SNACK_FLAVOURS,
+  SNACK_PRICE_RANGES,
+  SNACK_DIETARY_PREFERENCES,
+  SNACK_SORT_OPTIONS,
+} from './snacks';
+
+export {
+  SNACKS_PRODUCTS,
+  SNACK_SUBCATEGORIES,
+  SnackSubcategory,
+  SNACK_BRANDS,
+  SNACK_FLAVOURS,
+  SNACK_PRICE_RANGES,
+  SNACK_DIETARY_PREFERENCES,
+  SNACK_SORT_OPTIONS,
+};
 
 export const CATEGORIES: Category[] = [
   { id: 'all', name: 'All Items', icon: 'grid-outline', color: '#10B981' },
@@ -12,7 +33,7 @@ export const CATEGORIES: Category[] = [
   { id: 'vegetables', name: 'Vegetables', icon: 'leaf', badge: 'Organic', color: '#059669' },
   { id: 'dairy', name: 'Dairy & Eggs', icon: 'water-outline', color: '#3B82F6' },
   { id: 'bakery', name: 'Bakery', icon: 'fast-food-outline', badge: 'Hot', color: '#D97706' },
-  { id: 'snacks', name: 'Snacks', icon: 'fast-food-outline', color: '#EC4899' },
+  { id: 'snacks', name: 'Snacks & Munchies', icon: 'fast-food-outline', badge: 'Crunchy', color: '#EC4899' },
   { id: 'beverages', name: 'Beverages', icon: 'wine-outline', color: '#8B5CF6' },
   { id: 'rice-grains', name: 'Rice & Grains', icon: 'leaf-outline', color: '#F59E0B' },
   { id: 'cooking-essentials', name: 'Cooking Oils', icon: 'flame-outline', color: '#EF4444' },
@@ -1547,60 +1568,7 @@ export const PRODUCTS: Product[] = [
   },
 
   // ----------------- SNACKS AND MUNCHIES -----------------
-  {
-    id: 'sn-1',
-    name: 'Artisan Sea Salt Potato Crisps',
-    category: 'snacks',
-    subcategory: 'Chips & Crisps',
-    price: 50,
-    originalPrice: 60,
-    weightOrSize: '120g',
-    rating: 4.6,
-    reviewsCount: 410,
-    deliveryTimeMins: 10,
-    image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&auto=format&fit=crop&q=80',
-    inStock: true,
-    stockCount: 60,
-    isVeg: true,
-    description: 'Batch-cooked thick-cut potato chips sprinkled with Atlantic sea salt crystals. Golden, crunchy, and preservative-free.',
-    tags: ['Kettle Cooked', 'Crispy'],
-  },
-  {
-    id: 'sn-2',
-    name: 'Roasted Peri-Peri Smoked Almonds',
-    category: 'snacks',
-    subcategory: 'Nuts & Dry Fruits',
-    price: 240,
-    originalPrice: 290,
-    weightOrSize: '200g',
-    rating: 4.8,
-    reviewsCount: 175,
-    deliveryTimeMins: 10,
-    image: 'https://images.unsplash.com/photo-1508061252224-4039410f2555?w=600&auto=format&fit=crop&q=80',
-    inStock: true,
-    stockCount: 30,
-    isVeg: true,
-    description: 'California almonds slow-roasted and tossed with spicy African bird’s eye peri-peri spice. High in protein and energy.',
-    tags: ['Spicy', 'Superfood'],
-  },
-  {
-    id: 'sn-3',
-    name: 'Dark Chocolate Coated Pretzels',
-    category: 'snacks',
-    subcategory: 'Sweet Munchies',
-    price: 135,
-    originalPrice: 160,
-    weightOrSize: '150g',
-    rating: 4.9,
-    reviewsCount: 220,
-    deliveryTimeMins: 10,
-    image: 'https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=600&auto=format&fit=crop&q=80',
-    inStock: true,
-    stockCount: 25,
-    isVeg: true,
-    description: 'Crispy salted mini pretzels dipped generously in 65% rich dark chocolate. The ultimate sweet-and-salty craving fix.',
-    tags: ['65% Dark Choco', 'Gourmet'],
-  },
+  ...SNACKS_PRODUCTS,
 
   // ----------------- BEVERAGES -----------------
   // 1. Fruit Juices

@@ -62,6 +62,10 @@ export interface Product {
   description: string;
   tags?: string[];
   isVeg?: boolean;
+  isVegan?: boolean;
+  isJainFriendly?: boolean;
+  createdAt?: string;
+  discountPercentage?: number;
 
   // Beverage & Detailed Product Specifications
   brand?: string;

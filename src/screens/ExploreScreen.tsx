@@ -96,12 +96,14 @@ const styles = StyleSheet.create({
     paddingBottom: 90,
   },
   header: {
+    paddingTop: 8,
     marginBottom: 16,
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: '800',
-    color: '#111827',
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
     fontSize: 13,
