@@ -117,13 +117,44 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </View>
 
+        {/* Brand if available */}
+        {product.brand && (
+          <Text style={styles.brandText} numberOfLines={1}>
+            {product.brand}
+          </Text>
+        )}
+
         {/* Product Name */}
         <Text style={styles.productName} numberOfLines={2}>
           {product.name}
         </Text>
 
-        {/* Weight or Size */}
-        <Text style={styles.weightText}>{product.weightOrSize}</Text>
+        {/* Weight or Size & Sugar Label */}
+        <View style={styles.specRow}>
+          <Text style={styles.weightText}>{product.weightOrSize}</Text>
+          {product.sugarLabel && (
+            <View
+              style={[
+                styles.sugarBadge,
+                product.sugarLabel === 'Sugar-Free' || product.sugarLabel === 'Zero Added Sugar'
+                  ? styles.sugarBadgeGreen
+                  : styles.sugarBadgeBlue,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.sugarBadgeText,
+                  product.sugarLabel === 'Sugar-Free' || product.sugarLabel === 'Zero Added Sugar'
+                    ? styles.sugarBadgeTextGreen
+                    : styles.sugarBadgeTextBlue,
+                ]}
+                numberOfLines={1}
+              >
+                {product.sugarLabel}
+              </Text>
+            </View>
+          )}
+        </View>
 
         {/* Rating Row */}
         <View style={styles.ratingRow}>
@@ -372,5 +403,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     minWidth: 16,
     textAlign: 'center',
+  },
+  brandText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#6366F1',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  specRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
+    marginBottom: 4,
+  },
+  sugarBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+  },
+  sugarBadgeGreen: {
+    backgroundColor: '#ECFDF5',
+  },
+  sugarBadgeBlue: {
+    backgroundColor: '#EFF6FF',
+  },
+  sugarBadgeText: {
+    fontSize: 8.5,
+    fontWeight: '700',
+  },
+  sugarBadgeTextGreen: {
+    color: '#059669',
+  },
+  sugarBadgeTextBlue: {
+    color: '#2563EB',
   },
 });

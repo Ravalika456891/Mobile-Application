@@ -754,6 +754,48 @@ export const HomeScreen: React.FC = () => {
             </View>
           )}
 
+          {/* Section 6: Chilled Beverages, Juices & Refreshments Horizontal Section */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="wine-outline" size={15} color="#8B5CF6" />
+                    <Text style={styles.sectionHeading}>Chilled Beverages & Refreshments</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Cold-pressed juices, soft drinks, tender coconut, energy drinks & plant milk • 10-Min Delivery
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => setSelectedCategory('beverages')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#8B5CF6' }]}>View All Drinks</Text>
+                  <Icon name="chevron-forward" size={12} color="#8B5CF6" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {products
+                  .filter((p) => p.category === 'beverages')
+                  .slice(0, 10)
+                  .map((product) => (
+                    <ProductCard
+                      key={`bev-row-${product.id}`}
+                      product={product}
+                      customWidth={165}
+                    />
+                  ))}
+              </ScrollView>
+            </View>
+          )}
+
           {/* Section Header: Popular Products / Filtered Catalog */}
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionTitleCol}>

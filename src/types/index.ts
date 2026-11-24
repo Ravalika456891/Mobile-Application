@@ -24,6 +24,27 @@ export interface Category {
   color: string;
 }
 
+export interface NutritionInfo {
+  servingSize?: string;
+  energy?: string;
+  carbohydrates?: string;
+  sugars?: string;
+  addedSugar?: string;
+  protein?: string;
+  fat?: string;
+  sodium?: string;
+  potassium?: string;
+  calcium?: string;
+  vitaminC?: string;
+  vitaminD?: string;
+}
+
+export interface VolumeOption {
+  size: string;
+  price: number;
+  originalPrice?: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -41,6 +62,18 @@ export interface Product {
   description: string;
   tags?: string[];
   isVeg?: boolean;
+
+  // Beverage & Detailed Product Specifications
+  brand?: string;
+  flavour?: string;
+  volumeOptions?: VolumeOption[];
+  sugarLabel?: 'Sugar-Free' | 'Low-Sugar' | 'Zero Added Sugar' | 'Naturally Sweet' | 'Classic';
+  isSugarVerified?: boolean;
+  ingredients?: string;
+  nutritionInfo?: NutritionInfo;
+  shelfLife?: string;
+  expiryDate?: string;
+  storageInstructions?: string;
 }
 
 export interface CartItem {
