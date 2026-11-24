@@ -712,6 +712,48 @@ export const HomeScreen: React.FC = () => {
             </View>
           )}
 
+          {/* Section 5: Rice, Grains & Healthy Flours Horizontal Section */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="leaf-outline" size={15} color="#F59E0B" />
+                    <Text style={styles.sectionHeading}>Rice, Grains & Healthy Flours</Text>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Rice flour, millet flours, oats, quinoa, muesli & organic staples • 10-Min Delivery
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => setSelectedCategory('rice-grains')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.viewAllText, { color: '#D97706' }]}>View All Grains</Text>
+                  <Icon name="chevron-forward" size={12} color="#D97706" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {products
+                  .filter((p) => p.category === 'rice-grains')
+                  .slice(0, 10)
+                  .map((product) => (
+                    <ProductCard
+                      key={`rg-row-${product.id}`}
+                      product={product}
+                      customWidth={165}
+                    />
+                  ))}
+              </ScrollView>
+            </View>
+          )}
+
           {/* Section Header: Popular Products / Filtered Catalog */}
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionTitleCol}>
