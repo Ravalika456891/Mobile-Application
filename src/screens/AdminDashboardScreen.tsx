@@ -14,15 +14,22 @@ import {
 } from 'react-native';
 import { Icon } from '../components/Icon';
 import { useApp } from '../context/AppContext';
-import { Product, CategoryId, Order, OrderStage } from '../types';
+import { Product, CategoryId, Category, Order, OrderStage } from '../types';
 import { getUsersDB, LocalUser } from '../services/database';
 
 export const AdminDashboardScreen: React.FC = () => {
   const {
     products,
+    categories,
     updateProduct,
     toggleProductStock,
     addProduct,
+    deleteProduct,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addSubcategory,
+    deleteSubcategory,
     ordersList,
     updateOrderStatus,
     setIsAdminMode,
@@ -31,10 +38,30 @@ export const AdminDashboardScreen: React.FC = () => {
     showToast,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'kpi' | 'products' | 'orders' | 'users'>('kpi');
+  const [activeTab, setActiveTab] = useState<'kpi' | 'categories' | 'products' | 'orders' | 'users'>('kpi');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [stockOnlyFilter, setStockOnlyFilter] = useState<boolean>(false);
+
+  // Category Management States
+  const [addCatModalVisible, setAddCatModalVisible] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatId, setNewCatId] = useState('');
+  const [newCatBadge, setNewCatBadge] = useState('');
+  const [newCatColor, setNewCatColor] = useState('#10B981');
+  const [newCatSubcats, setNewCatSubcats] = useState('');
+  const [newCatDesc, setNewCatDesc] = useState('');
+
+  const [editCatModalVisible, setEditCatModalVisible] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editCatName, setEditCatName] = useState('');
+  const [editCatBadge, setEditCatBadge] = useState('');
+  const [editCatColor, setEditCatColor] = useState('#10B981');
+  const [editCatDesc, setEditCatDesc] = useState('');
+
+  const [subcatModalVisible, setSubcatModalVisible] = useState(false);
+  const [managingCat, setManagingCat] = useState<Category | null>(null);
+  const [newSubcatInput, setNewSubcatInput] = useState('');
 
   // Edit Product Modal
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -152,21 +179,137 @@ export const AdminDashboardScreen: React.FC = () => {
     setNewDescription('');
   };
 
+  // Category Management Handlers
+  const handleCreateCategory = () => {
+    if (!newCatName.trim()) {
+      Alert.alert('Required', 'Please enter a category name.');
+      return;
+    }
+    const id = (newCatId.trim() || newCatName.trim().toLowerCase().replace(/\s+/g, '-')) as CategoryId;
+    const subcats = newCatSubcats
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    const newCategoryObj: Category = {
+      id,
+      name: newCatName.trim(),
+      icon: 'grid-outline',
+      badge: newCatBadge.trim() || undefined,
+      color: newCatColor || '#10B981',
+      description: newCatDesc.trim() || `Shop fresh ${newCatName.trim()} delivered in minutes.`,
+      subcategories: subcats.length > 0 ? subcats : ['General'],
+    };
+
+    addCategory(newCategoryObj);
+    setAddCatModalVisible(false);
+    setNewCatName('');
+    setNewCatId('');
+    setNewCatBadge('');
+    setNewCatSubcats('');
+    setNewCatDesc('');
+  };
+
+  const handleOpenEditCategory = (cat: Category) => {
+    setEditingCategory(cat);
+    setEditCatName(cat.name);
+    setEditCatBadge(cat.badge || '');
+    setEditCatColor(cat.color || '#10B981');
+    setEditCatDesc(cat.description || '');
+    setEditCatModalVisible(true);
+  };
+
+  const handleSaveCategoryEdit = () => {
+    if (!editingCategory) return;
+    if (!editCatName.trim()) {
+      Alert.alert('Required', 'Category name cannot be empty.');
+      return;
+    }
+    updateCategory(editingCategory.id, {
+      name: editCatName.trim(),
+      badge: editCatBadge.trim() || undefined,
+      color: editCatColor,
+      description: editCatDesc.trim(),
+    });
+    setEditCatModalVisible(false);
+    setEditingCategory(null);
+  };
+
+  const handleDeleteCategory = (cat: Category) => {
+    Alert.alert(
+      'Delete Category',
+      `Are you sure you want to delete "${cat.name}"? Products in this category may be affected.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteCategory(cat.id),
+        },
+      ]
+    );
+  };
+
+  const handleOpenSubcats = (cat: Category) => {
+    setManagingCat(cat);
+    setNewSubcatInput('');
+    setSubcatModalVisible(true);
+  };
+
+  const handleAddSubcatToManaging = () => {
+    if (!managingCat || !newSubcatInput.trim()) return;
+    addSubcategory(managingCat.id, newSubcatInput.trim());
+    setManagingCat((prev) =>
+      prev ? { ...prev, subcategories: [...(prev.subcategories || []), newSubcatInput.trim()] } : null
+    );
+    setNewSubcatInput('');
+  };
+
+  const handleDeleteSubcatFromManaging = (sub: string) => {
+    if (!managingCat) return;
+    deleteSubcategory(managingCat.id, sub);
+    setManagingCat((prev) =>
+      prev
+        ? {
+            ...prev,
+            subcategories: (prev.subcategories || []).filter((s) => s !== sub),
+          }
+        : null
+    );
+  };
+
+  const handleDeleteProductPrompt = (prod: Product) => {
+    Alert.alert(
+      'Delete Product',
+      `Are you sure you want to remove "${prod.name}" from the store catalog?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteProduct(prod.id),
+        },
+      ]
+    );
+  };
+
   // KPI calculations
   const totalRevenue = ordersList.reduce((sum, o) => sum + o.total, 0) + 18450;
   const outOfStockCount = products.filter((p) => !p.inStock || p.stockCount === 0).length;
   const inStockCount = products.length - outOfStockCount;
 
+  const displayCategories = (categories && categories.length > 0 ? categories : []).filter(
+    (c) => c.id !== 'all'
+  );
+
   // Filtered Products
   const filteredProducts = products.filter((p) => {
     const matchQuery =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.subcategory.toLowerCase().includes(searchQuery.toLowerCase());
+      p.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchCat =
-      selectedCategoryFilter === 'all' ||
-      p.category === selectedCategoryFilter ||
-      (selectedCategoryFilter === 'vegetables' && p.category === 'vegetables') ||
-      (selectedCategoryFilter === 'fruits' && p.category === 'fruits');
+      selectedCategoryFilter === 'all' || p.category === selectedCategoryFilter;
     const matchStock = stockOnlyFilter ? !p.inStock || p.stockCount === 0 : true;
     return matchQuery && matchCat && matchStock;
   });
@@ -248,9 +391,19 @@ export const AdminDashboardScreen: React.FC = () => {
           style={[styles.tabNavBtn, activeTab === 'kpi' && styles.tabNavBtnActive]}
           onPress={() => setActiveTab('kpi')}
         >
-          <Icon name="flash" size={16} color={activeTab === 'kpi' ? '#059669' : '#6B7280'} />
+          <Icon name="flash" size={15} color={activeTab === 'kpi' ? '#059669' : '#6B7280'} />
           <Text style={[styles.tabNavText, activeTab === 'kpi' && styles.tabNavTextActive]}>
             Overview
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabNavBtn, activeTab === 'categories' && styles.tabNavBtnActive]}
+          onPress={() => setActiveTab('categories')}
+        >
+          <Icon name="grid-outline" size={15} color={activeTab === 'categories' ? '#059669' : '#6B7280'} />
+          <Text style={[styles.tabNavText, activeTab === 'categories' && styles.tabNavTextActive]}>
+            Categories ({displayCategories.length})
           </Text>
         </TouchableOpacity>
 
@@ -258,7 +411,7 @@ export const AdminDashboardScreen: React.FC = () => {
           style={[styles.tabNavBtn, activeTab === 'products' && styles.tabNavBtnActive]}
           onPress={() => setActiveTab('products')}
         >
-          <Icon name="cube" size={16} color={activeTab === 'products' ? '#059669' : '#6B7280'} />
+          <Icon name="cube" size={15} color={activeTab === 'products' ? '#059669' : '#6B7280'} />
           <Text style={[styles.tabNavText, activeTab === 'products' && styles.tabNavTextActive]}>
             Inventory ({products.length})
           </Text>
@@ -268,7 +421,7 @@ export const AdminDashboardScreen: React.FC = () => {
           style={[styles.tabNavBtn, activeTab === 'orders' && styles.tabNavBtnActive]}
           onPress={() => setActiveTab('orders')}
         >
-          <Icon name="bicycle" size={16} color={activeTab === 'orders' ? '#059669' : '#6B7280'} />
+          <Icon name="bicycle" size={15} color={activeTab === 'orders' ? '#059669' : '#6B7280'} />
           <Text style={[styles.tabNavText, activeTab === 'orders' && styles.tabNavTextActive]}>
             Orders ({ordersList.length})
           </Text>
@@ -278,7 +431,7 @@ export const AdminDashboardScreen: React.FC = () => {
           style={[styles.tabNavBtn, activeTab === 'users' && styles.tabNavBtnActive]}
           onPress={() => setActiveTab('users')}
         >
-          <Icon name="person" size={16} color={activeTab === 'users' ? '#059669' : '#6B7280'} />
+          <Icon name="person" size={15} color={activeTab === 'users' ? '#059669' : '#6B7280'} />
           <Text style={[styles.tabNavText, activeTab === 'users' && styles.tabNavTextActive]}>
             Users
           </Text>
@@ -390,6 +543,115 @@ export const AdminDashboardScreen: React.FC = () => {
         </ScrollView>
       )}
 
+      {/* TAB: CATEGORIES & SUBCATEGORIES MANAGEMENT */}
+      {activeTab === 'categories' && (
+        <View style={{ flex: 1 }}>
+          <View style={styles.productSearchBox}>
+            <View style={styles.searchInputWrapper}>
+              <Icon name="search" size={18} color="#9CA3AF" />
+              <TextInput
+                style={styles.searchTextInput}
+                placeholder="Search categories..."
+                placeholderTextColor="#9CA3AF"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Icon name="close" size={18} color="#9CA3AF" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.addNewProdHeaderBtn}
+              onPress={() => setAddCatModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Icon name="add" size={18} color="#FFFFFF" />
+              <Text style={styles.addNewProdHeaderText}>Add Category</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.productsScroll} showsVerticalScrollIndicator={false}>
+            <Text style={styles.resultsCount}>
+              Managing {displayCategories.length} Main Categories
+            </Text>
+
+            {displayCategories
+              .filter(
+                (c) =>
+                  !searchQuery ||
+                  c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  c.id.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((cat) => {
+                const catProdCount = products.filter((p) => p.category === cat.id).length;
+                return (
+                  <View key={cat.id} style={styles.categoryManageCard}>
+                    <View style={styles.catManageHeader}>
+                      <View style={[styles.catManageIconCircle, { backgroundColor: cat.color || '#10B981' }]}>
+                        <Icon name={cat.icon || 'grid-outline'} size={20} color="#FFFFFF" />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={styles.catManageTitle}>{cat.name}</Text>
+                          {cat.badge && (
+                            <View style={styles.catManageBadge}>
+                              <Text style={styles.catManageBadgeText}>{cat.badge}</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.catManageSub}>
+                          ID: {cat.id} • {catProdCount} Products • {cat.subcategories?.length || 0} Subcategories
+                        </Text>
+                      </View>
+
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity
+                          style={styles.catEditBtn}
+                          onPress={() => handleOpenEditCategory(cat)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.catEditBtnText}>Edit ✏️</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.catDeleteBtn}
+                          onPress={() => handleDeleteCategory(cat)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.catDeleteBtnText}>🗑️</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Subcategories chips & manager */}
+                    <View style={styles.catSubcategoriesRow}>
+                      <Text style={styles.subcatsLabel}>Subcategories ({cat.subcategories?.length || 0}):</Text>
+                      <View style={styles.subcatsChipsWrap}>
+                        {(cat.subcategories || []).map((sub) => (
+                          <View key={sub} style={styles.subcatChip}>
+                            <Text style={styles.subcatChipText}>{sub}</Text>
+                          </View>
+                        ))}
+                      </View>
+                      <TouchableOpacity
+                        style={styles.manageSubcatsBtn}
+                        onPress={() => handleOpenSubcats(cat)}
+                        activeOpacity={0.8}
+                      >
+                        <Icon name="pencil" size={12} color="#059669" />
+                        <Text style={styles.manageSubcatsBtnText}>Manage Subcategories</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+            <View style={{ height: 60 }} />
+          </ScrollView>
+        </View>
+      )}
+
       {/* TAB: PRODUCTS & INVENTORY */}
       {activeTab === 'products' && (
         <View style={{ flex: 1 }}>
@@ -429,10 +691,10 @@ export const AdminDashboardScreen: React.FC = () => {
           >
             {[
               { id: 'all', label: 'All Items' },
-              { id: 'vegetables', label: 'Vegetables (60)' },
-              { id: 'fruits', label: 'Fruits' },
-              { id: 'dairy', label: 'Dairy & Bread' },
-              { id: 'rice-grains', label: 'Rice & Grains' },
+              ...displayCategories.map((c) => ({
+                id: c.id,
+                label: `${c.name} (${products.filter((p) => p.category === c.id).length})`,
+              })),
             ].map((cat) => (
               <TouchableOpacity
                 key={cat.id}
@@ -520,7 +782,7 @@ export const AdminDashboardScreen: React.FC = () => {
                   </View>
                 </View>
 
-                {/* Quick Stock and Edit Buttons */}
+                {/* Quick Stock, Edit, and Delete Buttons */}
                 <View style={styles.prodActionsCol}>
                   <TouchableOpacity
                     style={[
@@ -546,6 +808,14 @@ export const AdminDashboardScreen: React.FC = () => {
                     activeOpacity={0.8}
                   >
                     <Text style={styles.editPriceBtnText}>Edit ✏️</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.editPriceBtn, { backgroundColor: '#FEE2E2', marginTop: 4 }]}
+                    onPress={() => handleDeleteProductPrompt(prod)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.editPriceBtnText, { color: '#DC2626' }]}>Delete 🗑️</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -801,20 +1071,20 @@ export const AdminDashboardScreen: React.FC = () => {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Category</Text>
-                <View style={styles.catPickerRow}>
-                  {[
-                    { id: 'vegetables', label: 'Vegetables' },
-                    { id: 'fruits', label: 'Fruits' },
-                    { id: 'dairy', label: 'Dairy' },
-                    { id: 'groceries', label: 'Grains' },
-                  ].map((c) => (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 4 }}>
+                  {displayCategories.map((c) => (
                     <TouchableOpacity
                       key={c.id}
                       style={[
                         styles.catPillBtn,
                         newCategory === c.id && styles.catPillBtnActive,
                       ]}
-                      onPress={() => setNewCategory(c.id as CategoryId)}
+                      onPress={() => {
+                        setNewCategory(c.id as CategoryId);
+                        if (c.subcategories && c.subcategories.length > 0) {
+                          setNewSubcategory(c.subcategories[0]);
+                        }
+                      }}
                     >
                       <Text
                         style={[
@@ -822,21 +1092,42 @@ export const AdminDashboardScreen: React.FC = () => {
                           newCategory === c.id && styles.catPillTextActive,
                         ]}
                       >
-                        {c.label}
+                        {c.name}
                       </Text>
                     </TouchableOpacity>
                   ))}
-                </View>
+                </ScrollView>
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Subcategory</Text>
                 <TextInput
                   style={styles.modalInput}
-                  placeholder="e.g. Leafy Greens"
+                  placeholder="e.g. Fresh Vegetables"
                   value={newSubcategory}
                   onChangeText={setNewSubcategory}
                 />
+                {/* Quick subcategory suggestions */}
+                {displayCategories.find((c) => c.id === newCategory)?.subcategories && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, marginTop: 6 }}>
+                    {displayCategories
+                      .find((c) => c.id === newCategory)
+                      ?.subcategories?.map((sub) => (
+                        <TouchableOpacity
+                          key={sub}
+                          style={[
+                            styles.subcatChip,
+                            newSubcategory === sub && { backgroundColor: '#D1FAE5', borderColor: '#10B981', borderWidth: 1 },
+                          ]}
+                          onPress={() => setNewSubcategory(sub)}
+                        >
+                          <Text style={[styles.subcatChipText, newSubcategory === sub && { color: '#065F46', fontWeight: '700' }]}>
+                            {sub}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                  </ScrollView>
+                )}
               </View>
 
               <View style={styles.inputGroup}>
@@ -876,6 +1167,213 @@ export const AdminDashboardScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* MODAL: ADD CATEGORY */}
+      <Modal
+        visible={addCatModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAddCatModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <ScrollView contentContainerStyle={styles.modalScroll}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Add New Category</Text>
+                <TouchableOpacity onPress={() => setAddCatModalVisible(false)}>
+                  <Icon name="close" size={22} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Category Name *</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g. Organic Health Foods"
+                  value={newCatName}
+                  onChangeText={setNewCatName}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Category ID (slug, optional)</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g. organic-health"
+                  value={newCatId}
+                  onChangeText={setNewCatId}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Badge Label (optional)</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g. Fresh, Organic, Hot, 10% Off"
+                  value={newCatBadge}
+                  onChangeText={setNewCatBadge}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Theme Color Hex</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="#10B981"
+                  value={newCatColor}
+                  onChangeText={setNewCatColor}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Subcategories (comma separated)</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g. Muesli, Super Seeds, Nuts"
+                  value={newCatSubcats}
+                  onChangeText={setNewCatSubcats}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Description</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Brief description of products in category"
+                  value={newCatDesc}
+                  onChangeText={setNewCatDesc}
+                />
+              </View>
+
+              <TouchableOpacity style={styles.saveBtn} onPress={handleCreateCategory}>
+                <Text style={styles.saveBtnText}>Create Category</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* MODAL: EDIT CATEGORY */}
+      <Modal
+        visible={editCatModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditCatModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Category</Text>
+              <TouchableOpacity onPress={() => setEditCatModalVisible(false)}>
+                <Icon name="close" size={22} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Category Name *</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editCatName}
+                onChangeText={setEditCatName}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Badge Label</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editCatBadge}
+                onChangeText={setEditCatBadge}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Theme Color</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editCatColor}
+                onChangeText={setEditCatColor}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editCatDesc}
+                onChangeText={setEditCatDesc}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveCategoryEdit}>
+              <Text style={styles.saveBtnText}>Save Category Changes</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: MANAGE SUBCATEGORIES */}
+      <Modal
+        visible={subcatModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSubcatModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Subcategories for {managingCat?.name}</Text>
+              <TouchableOpacity onPress={() => setSubcatModalVisible(false)}>
+                <Icon name="close" size={22} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 10 }}>
+              Existing Subcategories ({managingCat?.subcategories?.length || 0}):
+            </Text>
+
+            <ScrollView style={{ maxHeight: 180, marginBottom: 12 }}>
+              {(managingCat?.subcategories || []).map((sub) => (
+                <View
+                  key={sub}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: '#F9FAFB',
+                    padding: 8,
+                    borderRadius: 6,
+                    marginBottom: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: '#111827', fontWeight: '500' }}>• {sub}</Text>
+                  <TouchableOpacity
+                    onPress={() => handleDeleteSubcatFromManaging(sub)}
+                    style={{ padding: 4 }}
+                  >
+                    <Icon name="close-circle" size={16} color="#DC2626" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+              <TextInput
+                style={[styles.modalInput, { flex: 1 }]}
+                placeholder="New subcategory name..."
+                value={newSubcatInput}
+                onChangeText={setNewSubcatInput}
+              />
+              <TouchableOpacity
+                style={[styles.saveBtn, { marginTop: 0, paddingHorizontal: 14 }]}
+                onPress={handleAddSubcatToManaging}
+              >
+                <Text style={styles.saveBtnText}>+ Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
     </View>
@@ -1527,5 +2025,106 @@ const styles = StyleSheet.create({
   },
   catPillTextActive: {
     color: '#FFFFFF',
+  },
+  categoryManageCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  catManageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  catManageIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  catManageTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  catManageBadge: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  catManageBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  catManageSub: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  catEditBtn: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  catEditBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  catDeleteBtn: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  catDeleteBtnText: {
+    fontSize: 11,
+    color: '#DC2626',
+  },
+  catSubcategoriesRow: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  subcatsLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4B5563',
+    marginBottom: 6,
+  },
+  subcatsChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  subcatChip: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  subcatChipText: {
+    fontSize: 11,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  manageSubcatsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  manageSubcatsBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#059669',
   },
 });

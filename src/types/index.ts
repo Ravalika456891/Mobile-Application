@@ -1,20 +1,27 @@
 export type CategoryId = 
   | 'all'
-  | 'fruits-vegetables'
-  | 'fruits'
   | 'vegetables'
-  | 'dairy'
-  | 'bakery'
+  | 'fruits'
   | 'rice-grains'
+  | 'dairy'
   | 'snacks'
   | 'beverages'
+  | 'masala-spices'
   | 'cooking-essentials'
-  | 'household'
+  | 'bakery'
+  | 'frozen-foods'
   | 'personal-care'
+  | 'home-care'
+  | 'baby-care'
+  | 'pet-supplies'
+  | 'stationery'
+  | 'kitchen-home'
+  | 'household'
   | 'groceries'
   | 'icecreams'
   | 'clothing'
-  | 'accessories';
+  | 'accessories'
+  | 'fruits-vegetables';
 
 export interface Category {
   id: CategoryId;
@@ -22,6 +29,10 @@ export interface Category {
   icon: string;
   badge?: string;
   color: string;
+  image?: string;
+  subcategories?: string[];
+  description?: string;
+  featured?: boolean;
 }
 
 export interface NutritionInfo {
@@ -65,7 +76,9 @@ export interface Product {
   isVegan?: boolean;
   isJainFriendly?: boolean;
   createdAt?: string;
+  updatedAt?: string;
   discountPercentage?: number;
+  featured?: boolean;
 
   // Beverage & Detailed Product Specifications
   brand?: string;

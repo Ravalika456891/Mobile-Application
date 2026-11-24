@@ -6,7 +6,8 @@ import { useApp } from '../context/AppContext';
 import { CategoryId } from '../types';
 
 export const CategoryBar: React.FC = () => {
-  const { selectedCategory, setSelectedCategory } = useApp();
+  const { selectedCategory, setSelectedCategory, categories } = useApp();
+  const displayCats = categories && categories.length > 0 ? categories : CATEGORIES;
 
   return (
     <View style={styles.container}>
@@ -15,7 +16,7 @@ export const CategoryBar: React.FC = () => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {CATEGORIES.map((cat) => {
+        {displayCats.map((cat) => {
           const isSelected = selectedCategory === cat.id;
           return (
             <TouchableOpacity

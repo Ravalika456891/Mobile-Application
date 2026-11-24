@@ -77,6 +77,8 @@ const memoryStore = {
   cart: [] as { product_id: string; quantity: number }[],
   wishlist: [] as string[],
   orders: [] as StoredOrder[],
+  categories: [...CATEGORIES] as Category[],
+  products: [...PRODUCTS] as Product[],
 };
 
 /**
@@ -253,6 +255,178 @@ export const getUsersDB = async (): Promise<LocalUser[]> => {
 };
 
 // ==========================================
+// 16 CATEGORIES & SUBCATEGORIES APIS
+// ==========================================
+
+/**
+ * GET all categories
+ */
+export const getCategoriesDB = async (): Promise<Category[]> => {
+  return [...memoryStore.categories];
+};
+
+/**
+ * GET category by ID
+ */
+export const getCategoryByIdDB = async (id: string): Promise<Category | null> => {
+  const cat = memoryStore.categories.find((c) => c.id === id);
+  return cat ? { ...cat } : null;
+};
+
+/**
+ * GET subcategories for a given category
+ */
+export const getSubcategoriesByCategoryDB = async (categoryId: string): Promise<string[]> => {
+  const cat = memoryStore.categories.find((c) => c.id === categoryId);
+  return cat?.subcategories ? [...cat.subcategories] : [];
+};
+
+/**
+ * ADD new category
+ */
+export const addCategoryDB = async (
+  category: Category
+): Promise<{ success: boolean; categories: Category[] }> => {
+  const existing = memoryStore.categories.findIndex((c) => c.id === category.id);
+  if (existing >= 0) {
+    memoryStore.categories[existing] = { ...category };
+  } else {
+    memoryStore.categories.push({ ...category });
+  }
+  return { success: true, categories: [...memoryStore.categories] };
+};
+
+/**
+ * UPDATE category
+ */
+export const updateCategoryDB = async (
+  id: string,
+  updates: Partial<Category>
+): Promise<{ success: boolean; category?: Category }> => {
+  const idx = memoryStore.categories.findIndex((c) => c.id === id);
+  if (idx === -1) return { success: false };
+  memoryStore.categories[idx] = { ...memoryStore.categories[idx], ...updates };
+  return { success: true, category: { ...memoryStore.categories[idx] } };
+};
+
+/**
+ * DELETE category
+ */
+export const deleteCategoryDB = async (
+  id: string
+): Promise<{ success: boolean; categories: Category[] }> => {
+  memoryStore.categories = memoryStore.categories.filter((c) => c.id !== id);
+  return { success: true, categories: [...memoryStore.categories] };
+};
+
+/**
+ * ADD subcategory to category
+ */
+export const addSubcategoryDB = async (
+  categoryId: string,
+  subcategory: string
+): Promise<{ success: boolean; subcategories: string[] }> => {
+  const cat = memoryStore.categories.find((c) => c.id === categoryId);
+  if (!cat) return { success: false, subcategories: [] };
+  if (!cat.subcategories) cat.subcategories = [];
+  if (!cat.subcategories.includes(subcategory)) {
+    cat.subcategories.push(subcategory);
+  }
+  return { success: true, subcategories: [...cat.subcategories] };
+};
+
+/**
+ * DELETE subcategory from category
+ */
+export const deleteSubcategoryDB = async (
+  categoryId: string,
+  subcategory: string
+): Promise<{ success: boolean; subcategories: string[] }> => {
+  const cat = memoryStore.categories.find((c) => c.id === categoryId);
+  if (!cat || !cat.subcategories) return { success: false, subcategories: [] };
+  cat.subcategories = cat.subcategories.filter((s) => s !== subcategory);
+  return { success: true, subcategories: [...cat.subcategories] };
+};
+
+// ==========================================
+// PRODUCT & INVENTORY MANAGEMENT APIS
+// ==========================================
+
+/**
+ * ADD product
+ */
+export const addProductDB = async (
+  product: Product
+): Promise<{ success: boolean; products: Product[] }> => {
+  const idx = memoryStore.products.findIndex((p) => p.id === product.id);
+  if (idx >= 0) {
+    memoryStore.products[idx] = { ...product, updatedAt: new Date().toISOString() };
+  } else {
+    memoryStore.products.unshift({
+      ...product,
+      createdAt: product.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }
+  return { success: true, products: [...memoryStore.products] };
+};
+
+/**
+ * UPDATE product
+ */
+export const updateProductDB = async (
+  productId: string,
+  updates: Partial<Product>
+): Promise<{ success: boolean; product?: Product }> => {
+  const idx = memoryStore.products.findIndex((p) => p.id === productId);
+  if (idx === -1) return { success: false };
+  memoryStore.products[idx] = {
+    ...memoryStore.products[idx],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  return { success: true, product: { ...memoryStore.products[idx] } };
+};
+
+/**
+ * DELETE product
+ */
+export const deleteProductDB = async (
+  productId: string
+): Promise<{ success: boolean; products: Product[] }> => {
+  memoryStore.products = memoryStore.products.filter((p) => p.id !== productId);
+  return { success: true, products: [...memoryStore.products] };
+};
+
+/**
+ * UPDATE inventory / stock count
+ */
+export const updateInventoryDB = async (
+  productId: string,
+  stockCount: number
+): Promise<{ success: boolean; product?: Product }> => {
+  return updateProductDB(productId, {
+    stockCount,
+    inStock: stockCount > 0,
+  });
+};
+
+/**
+ * TOGGLE product stock status
+ */
+export const toggleProductStatusDB = async (
+  productId: string
+): Promise<{ success: boolean; inStock: boolean }> => {
+  const prod = memoryStore.products.find((p) => p.id === productId);
+  if (!prod) return { success: false, inStock: false };
+  const newStatus = !prod.inStock;
+  prod.inStock = newStatus;
+  prod.stockCount = newStatus ? (prod.stockCount > 0 ? prod.stockCount : 20) : 0;
+  prod.updatedAt = new Date().toISOString();
+  return { success: true, inStock: newStatus };
+};
+
+// ==========================================
 // SNACKS & SHOPPING DATABASE APIS
 // ==========================================
 
@@ -274,8 +448,8 @@ export const getSnackSubcategoriesDB = async (): Promise<string[]> => {
  * GET products by category
  */
 export const getProductsByCategoryDB = async (category: string): Promise<Product[]> => {
-  if (category === 'all') return [...PRODUCTS];
-  return PRODUCTS.filter((p) => p.category === category);
+  if (category === 'all') return [...memoryStore.products];
+  return memoryStore.products.filter((p) => p.category === category);
 };
 
 /**
@@ -285,7 +459,7 @@ export const getProductsBySubcategoryDB = async (
   category: string,
   subcategory: string
 ): Promise<Product[]> => {
-  const prods = category === 'all' ? PRODUCTS : PRODUCTS.filter((p) => p.category === category);
+  const prods = category === 'all' ? memoryStore.products : memoryStore.products.filter((p) => p.category === category);
   if (!subcategory || subcategory === 'All' || subcategory === 'All Snacks' || subcategory === 'All Vegetables') {
     return prods;
   }
@@ -296,7 +470,7 @@ export const getProductsBySubcategoryDB = async (
  * GET product details by ID
  */
 export const getProductDetailsDB = async (productId: string): Promise<Product | null> => {
-  const found = PRODUCTS.find((p) => p.id === productId);
+  const found = memoryStore.products.find((p) => p.id === productId);
   return found ? { ...found } : null;
 };
 
@@ -307,7 +481,7 @@ export const getProductsByBrandDB = async (
   category: string,
   brand: string
 ): Promise<Product[]> => {
-  const prods = category === 'all' ? PRODUCTS : PRODUCTS.filter((p) => p.category === category);
+  const prods = category === 'all' ? memoryStore.products : memoryStore.products.filter((p) => p.category === category);
   if (!brand || brand === 'All Brands') return prods;
   return prods.filter((p) => p.brand && p.brand.toLowerCase() === brand.toLowerCase());
 };
@@ -320,7 +494,7 @@ export const getProductsByPriceRangeDB = async (
   minPrice: number,
   maxPrice: number
 ): Promise<Product[]> => {
-  const prods = category === 'all' ? PRODUCTS : PRODUCTS.filter((p) => p.category === category);
+  const prods = category === 'all' ? memoryStore.products : memoryStore.products.filter((p) => p.category === category);
   return prods.filter((p) => p.price >= minPrice && p.price <= maxPrice);
 };
 
@@ -332,7 +506,7 @@ export const searchProductsDB = async (
   category?: string
 ): Promise<Product[]> => {
   const q = query.trim().toLowerCase();
-  let prods = category && category !== 'all' ? PRODUCTS.filter((p) => p.category === category) : PRODUCTS;
+  let prods = category && category !== 'all' ? memoryStore.products.filter((p) => p.category === category) : memoryStore.products;
   if (!q) return prods;
   return prods.filter(
     (p) =>

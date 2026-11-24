@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, CartItem, Order, OrderStage, Coupon, CategoryId } from '../types';
-import { PRODUCTS, AVAILABLE_COUPONS } from '../data/products';
+import { Product, CartItem, Order, OrderStage, Coupon, CategoryId, Category } from '../types';
+import { PRODUCTS, AVAILABLE_COUPONS, CATEGORIES } from '../data/products';
 import {
   LocalUser,
   initDatabase,
@@ -13,12 +13,21 @@ import {
   saveCartDB,
   loadCartDB,
   saveOrderDB,
+  addCategoryDB,
+  updateCategoryDB,
+  deleteCategoryDB,
+  addSubcategoryDB,
+  deleteSubcategoryDB,
+  addProductDB,
+  updateProductDB,
+  deleteProductDB,
 } from '../services/database';
 
 interface AppContextType {
   currentUser: LocalUser | null;
   authScreen: 'login' | 'register' | null;
   products: Product[];
+  categories: Category[];
   cart: CartItem[];
   cartCount: number;
   cartSubtotal: number;
@@ -42,6 +51,12 @@ interface AppContextType {
   updateProduct: (productId: string, updates: Partial<Product>) => void;
   toggleProductStock: (productId: string) => void;
   addProduct: (product: Product) => void;
+  deleteProduct: (productId: string) => void;
+  addCategory: (cat: Category) => void;
+  updateCategory: (id: string, updates: Partial<Category>) => void;
+  deleteCategory: (id: string) => void;
+  addSubcategory: (catId: string, subcategory: string) => void;
+  deleteSubcategory: (catId: string, subcategory: string) => void;
   ordersList: Order[];
   updateOrderStatus: (orderId: string, status: OrderStage) => void;
 
@@ -92,6 +107,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [authScreen, setAuthScreen] = useState<'login' | 'register' | null>(null);
 
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [categories, setCategories] = useState<Category[]>(CATEGORIES);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [initialLoginMode, setInitialLoginMode] = useState<'customer' | 'admin'>('customer');
   const [ordersList, setOrdersList] = useState<Order[]>([
@@ -180,7 +196,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addProduct = (newProduct: Product) => {
     setProducts((prev) => [newProduct, ...prev]);
+    addProductDB(newProduct).catch(() => {});
     showToast(`Added ${newProduct.name} to catalog! 🎉`);
+  };
+
+  const deleteProduct = (productId: string) => {
+    setProducts((prev) => prev.filter((p) => p.id !== productId));
+    deleteProductDB(productId).catch(() => {});
+    showToast('Product removed from catalog 🗑️');
+  };
+
+  const addCategory = (newCat: Category) => {
+    setCategories((prev) => [...prev, newCat]);
+    addCategoryDB(newCat).catch(() => {});
+    showToast(`Category ${newCat.name} created! 🏷️`);
+  };
+
+  const updateCategory = (id: string, updates: Partial<Category>) => {
+    setCategories((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
+    );
+    updateCategoryDB(id, updates).catch(() => {});
+    showToast('Category updated! ✏️');
+  };
+
+  const deleteCategory = (id: string) => {
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+    deleteCategoryDB(id).catch(() => {});
+    showToast('Category deleted! 🗑️');
+  };
+
+  const addSubcategory = (catId: string, subcategory: string) => {
+    setCategories((prev) =>
+      prev.map((c) => {
+        if (c.id === catId) {
+          const subs = c.subcategories || [];
+          if (!subs.includes(subcategory)) {
+            return { ...c, subcategories: [...subs, subcategory] };
+          }
+        }
+        return c;
+      })
+    );
+    addSubcategoryDB(catId, subcategory).catch(() => {});
+    showToast(`Added subcategory: ${subcategory}`);
+  };
+
+  const deleteSubcategory = (catId: string, subcategory: string) => {
+    setCategories((prev) =>
+      prev.map((c) => {
+        if (c.id === catId && c.subcategories) {
+          return {
+            ...c,
+            subcategories: c.subcategories.filter((s) => s !== subcategory),
+          };
+        }
+        return c;
+      })
+    );
+    deleteSubcategoryDB(catId, subcategory).catch(() => {});
+    showToast(`Removed subcategory: ${subcategory}`);
   };
 
   const updateOrderStatus = (orderId: string, newStage: OrderStage) => {
@@ -439,6 +514,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         authScreen,
         products,
+        categories,
         cart,
         cartCount,
         cartSubtotal,
@@ -461,6 +537,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateProduct,
         toggleProductStock,
         addProduct,
+        deleteProduct,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+        addSubcategory,
+        deleteSubcategory,
         ordersList,
         updateOrderStatus,
 

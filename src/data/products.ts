@@ -1,5 +1,11 @@
 import { Category, Product, Coupon } from '../types';
 import {
+  CATEGORIES,
+  MARKETPLACE_CATEGORIES,
+  getCategoryById,
+  getCategorySubcategories,
+} from './categories';
+import {
   VEGETABLES,
   popularVegetables,
   VEGETABLE_SUBCATEGORIES,
@@ -15,8 +21,13 @@ import {
   SNACK_DIETARY_PREFERENCES,
   SNACK_SORT_OPTIONS,
 } from './snacks';
+import { MARKETPLACE_ADDITIONAL_PRODUCTS } from './marketplaceProducts';
 
 export {
+  CATEGORIES,
+  MARKETPLACE_CATEGORIES,
+  getCategoryById,
+  getCategorySubcategories,
   SNACKS_PRODUCTS,
   SNACK_SUBCATEGORIES,
   SnackSubcategory,
@@ -25,21 +36,8 @@ export {
   SNACK_PRICE_RANGES,
   SNACK_DIETARY_PREFERENCES,
   SNACK_SORT_OPTIONS,
+  MARKETPLACE_ADDITIONAL_PRODUCTS,
 };
-
-export const CATEGORIES: Category[] = [
-  { id: 'all', name: 'All Items', icon: 'grid-outline', color: '#10B981' },
-  { id: 'fruits', name: 'Fruits', icon: 'nutrition-outline', badge: 'Fresh', color: '#10B981' },
-  { id: 'vegetables', name: 'Vegetables', icon: 'leaf', badge: 'Organic', color: '#059669' },
-  { id: 'dairy', name: 'Dairy & Eggs', icon: 'water-outline', color: '#3B82F6' },
-  { id: 'bakery', name: 'Bakery', icon: 'fast-food-outline', badge: 'Hot', color: '#D97706' },
-  { id: 'snacks', name: 'Snacks & Munchies', icon: 'fast-food-outline', badge: 'Crunchy', color: '#EC4899' },
-  { id: 'beverages', name: 'Beverages', icon: 'wine-outline', color: '#8B5CF6' },
-  { id: 'rice-grains', name: 'Rice & Grains', icon: 'leaf-outline', color: '#F59E0B' },
-  { id: 'cooking-essentials', name: 'Cooking Oils', icon: 'flame-outline', color: '#EF4444' },
-  { id: 'household', name: 'Household', icon: 'sparkles-outline', color: '#06B6D4' },
-  { id: 'personal-care', name: 'Personal Care', icon: 'heart-outline', color: '#14B8A6' },
-];
 
 export const AVAILABLE_COUPONS: Coupon[] = [
   { code: 'GROCERY15', discountPercentage: 15, maxDiscount: 100, minOrder: 300, description: '15% OFF up to ₹100 on fresh grocery orders above ₹300' },
@@ -2824,6 +2822,9 @@ export const PRODUCTS: Product[] = [
 
   // ----------------- COMPLETE VEGETABLES (60 ITEMS) -----------------
   ...VEGETABLES,
+
+  // ----------------- COMPLETE MARKETPLACE CATEGORIES (10 NEW CATEGORIES) -----------------
+  ...MARKETPLACE_ADDITIONAL_PRODUCTS,
 ];
 
 export * from './FruitProduct';

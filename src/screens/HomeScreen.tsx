@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Image,
 } from 'react-native';
 import { Icon } from '../components/Icon';
 import { useApp } from '../context/AppContext';
@@ -16,6 +17,8 @@ import {
   popularVegetables,
   VEGETABLE_SUBCATEGORIES,
   VegetableSubcategory,
+  CATEGORIES,
+  getCategorySubcategories,
 } from '../data/products';
 import {
   SNACK_SUBCATEGORIES,
@@ -32,6 +35,7 @@ type VegSortOption = 'popular' | 'price-asc' | 'price-desc' | 'rating';
 export const HomeScreen: React.FC = () => {
   const {
     products,
+    categories,
     selectedCategory,
     searchQuery,
     setSearchQuery,
@@ -41,6 +45,16 @@ export const HomeScreen: React.FC = () => {
 
   const [filterVegOnly, setFilterVegOnly] = useState(false);
   const [filterFastDelivery, setFilterFastDelivery] = useState(false);
+
+  // Dedicated Category Screen States (for all 16 categories)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
+  const [categorySortBy, setCategorySortBy] = useState('Popularity');
+
+  useEffect(() => {
+    setSelectedSubcategory('All');
+    setCategorySearchQuery('');
+  }, [selectedCategory]);
 
   // Dedicated Vegetables Screen States
   const [selectedVegSubcategory, setSelectedVegSubcategory] =
@@ -60,6 +74,33 @@ export const HomeScreen: React.FC = () => {
 
   const isSearching = searchQuery.trim().length > 0;
 
+  const displayCategories = useMemo(
+    () => (categories && categories.length > 0 ? categories : CATEGORIES).filter((c) => c.id !== 'all'),
+    [categories]
+  );
+
+  const currentCatObj = useMemo(
+    () => (categories && categories.length > 0 ? categories : CATEGORIES).find((c) => c.id === selectedCategory),
+    [categories, selectedCategory]
+  );
+
+  const currentSubcategories = useMemo(() => {
+    if (!currentCatObj || !currentCatObj.subcategories) {
+      return getCategorySubcategories(selectedCategory);
+    }
+    return currentCatObj.subcategories;
+  }, [currentCatObj, selectedCategory]);
+
+  const trendingProducts = useMemo(
+    () => products.filter((p) => (p.originalPrice && p.originalPrice > p.price) || p.rating >= 4.8).slice(0, 10),
+    [products]
+  );
+
+  const featuredPicks = useMemo(
+    () => products.filter((p) => p.tags?.some((t) => t.toLowerCase().includes('fresh') || t.toLowerCase().includes('best seller'))).slice(0, 10),
+    [products]
+  );
+
   // Recommended Products: Top rated products (>= 4.8)
   const recommendedProducts = useMemo(
     () => products.filter((p) => p.rating >= 4.8).slice(0, 8),
@@ -71,6 +112,86 @@ export const HomeScreen: React.FC = () => {
     () => products.filter((p) => p.category === 'fruits').slice(0, 10),
     [products]
   );
+
+  // General Category Products Filtered & Sorted (for any of the 16 categories)
+  const categoryProducts = useMemo(() => {
+    let list = products.filter((p) => {
+      if (selectedCategory === 'fruits') {
+        return (
+          p.category === 'fruits' ||
+          (p.category === 'fruits-vegetables' &&
+            (p.subcategory.toLowerCase().includes('fruit') ||
+              p.tags?.some((t) => t.toLowerCase().includes('fruit'))))
+        );
+      }
+      return p.category === selectedCategory;
+    });
+
+    // Subcategory filter
+    if (selectedSubcategory !== 'All') {
+      list = list.filter((p) => p.subcategory.toLowerCase() === selectedSubcategory.toLowerCase());
+    }
+
+    // In-category search filter
+    if (categorySearchQuery.trim().length > 0) {
+      const q = categorySearchQuery.toLowerCase().trim();
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.subcategory.toLowerCase().includes(q) ||
+          (p.brand && p.brand.toLowerCase().includes(q)) ||
+          p.tags?.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+
+    // Fast delivery filter
+    if (filterFastDelivery) {
+      list = list.filter((p) => p.deliveryTimeMins <= 10);
+    }
+
+    // Veg only filter
+    if (filterVegOnly) {
+      list = list.filter((p) => p.isVeg);
+    }
+
+    // Sorting
+    const sorted = [...list];
+    switch (categorySortBy) {
+      case 'Price: Low to High':
+        sorted.sort((a, b) => a.price - b.price);
+        break;
+      case 'Price: High to Low':
+        sorted.sort((a, b) => b.price - a.price);
+        break;
+      case 'Rating':
+        sorted.sort((a, b) => b.rating - a.rating);
+        break;
+      case 'Discount':
+        sorted.sort((a, b) => {
+          const discA = a.originalPrice ? (a.originalPrice - a.price) / a.originalPrice : 0;
+          const discB = b.originalPrice ? (b.originalPrice - b.price) / b.originalPrice : 0;
+          return discB - discA;
+        });
+        break;
+      case 'New Arrivals':
+        sorted.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        break;
+      case 'Popularity':
+      default:
+        sorted.sort((a, b) => b.reviewsCount - a.reviewsCount);
+        break;
+    }
+    return sorted;
+  }, [
+    products,
+    selectedCategory,
+    selectedSubcategory,
+    categorySearchQuery,
+    filterFastDelivery,
+    filterVegOnly,
+    categorySortBy,
+  ]);
 
   // Dedicated Vegetable Products List (All 60 items)
   const vegetableProducts = useMemo(() => {
@@ -398,6 +519,11 @@ export const HomeScreen: React.FC = () => {
 
   const isVegetablesCategory = selectedCategory === 'vegetables' && !isSearching;
   const isSnacksCategory = selectedCategory === 'snacks' && !isSearching;
+  const isOtherDedicatedCategory =
+    selectedCategory !== 'all' &&
+    !isVegetablesCategory &&
+    !isSnacksCategory &&
+    !isSearching;
 
   return (
     <ScrollView
@@ -1093,13 +1219,333 @@ export const HomeScreen: React.FC = () => {
             </View>
           )}
         </View>
+      ) : isOtherDedicatedCategory ? (
+        /* ============================================================ */
+        /* CASE C: DEDICATED VIEW FOR ANY OF THE OTHER 14 CATEGORIES    */
+        /* ============================================================ */
+        <View style={styles.vegScreenContainer}>
+          {/* Back Navigation Bar */}
+          <View style={styles.categoryNavRow}>
+            <TouchableOpacity
+              style={styles.backPill}
+              onPress={() => setSelectedCategory('all')}
+              activeOpacity={0.7}
+            >
+              <Icon name="arrow-back" size={16} color={currentCatObj?.color || '#059669'} />
+              <Text style={[styles.backPillText, { color: currentCatObj?.color || '#059669' }]}>
+                All Departments
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.totalBadge}>
+              <Icon name={currentCatObj?.icon || 'grid-outline'} size={13} color={currentCatObj?.color || '#059669'} />
+              <Text style={[styles.totalBadgeText, { color: currentCatObj?.color || '#059669' }]}>
+                {categoryProducts.length} Items Available
+              </Text>
+            </View>
+          </View>
+
+          {/* Dedicated Category Hero Banner */}
+          <View style={[styles.vegHeroBanner, { backgroundColor: currentCatObj?.color || '#059669' }]}>
+            <View style={styles.vegHeroTextCol}>
+              {currentCatObj?.badge && (
+                <View style={styles.vegBadgeTag}>
+                  <Icon name="flash" size={12} color="#FFFFFF" />
+                  <Text style={styles.vegBadgeTagText}>{currentCatObj.badge.toUpperCase()} • 10-MIN EXPRESS</Text>
+                </View>
+              )}
+              <Text style={styles.vegHeroTitle}>{currentCatObj?.name}</Text>
+              <Text style={styles.vegHeroSub}>
+                {currentCatObj?.description || 'Guaranteed freshness delivered straight to your door in 10 minutes.'}
+              </Text>
+            </View>
+          </View>
+
+          {/* In-Category Search Box */}
+          <View style={styles.vegSearchBox}>
+            <Icon name="search-outline" size={17} color="#6B7280" />
+            <TextInput
+              style={styles.vegSearchInput}
+              placeholder={`Search in ${currentCatObj?.name || 'this category'}...`}
+              placeholderTextColor="#9CA3AF"
+              value={categorySearchQuery}
+              onChangeText={setCategorySearchQuery}
+              returnKeyType="search"
+            />
+            {categorySearchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setCategorySearchQuery('')}>
+                <Icon name="close-circle" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Subcategories Horizontal Bar */}
+          {currentSubcategories.length > 0 && (
+            <View style={styles.subcatSection}>
+              <Text style={styles.filterSectionTitle}>Subcategories</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.subcatScroll}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.subcatPill,
+                    selectedSubcategory === 'All' && [
+                      styles.subcatPillActive,
+                      {
+                        backgroundColor: currentCatObj?.color || '#059669',
+                        borderColor: currentCatObj?.color || '#059669',
+                      },
+                    ],
+                  ]}
+                  onPress={() => setSelectedSubcategory('All')}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.subcatPillText,
+                      selectedSubcategory === 'All' && styles.subcatPillTextActive,
+                    ]}
+                  >
+                    All {currentCatObj?.name}
+                  </Text>
+                </TouchableOpacity>
+
+                {currentSubcategories.map((subcat) => {
+                  const isSelected = selectedSubcategory.toLowerCase() === subcat.toLowerCase();
+                  const count = products.filter(
+                    (p) =>
+                      p.category === selectedCategory &&
+                      p.subcategory.toLowerCase() === subcat.toLowerCase()
+                  ).length;
+
+                  return (
+                    <TouchableOpacity
+                      key={subcat}
+                      style={[
+                        styles.subcatPill,
+                        isSelected && [
+                          styles.subcatPillActive,
+                          {
+                            backgroundColor: currentCatObj?.color || '#059669',
+                            borderColor: currentCatObj?.color || '#059669',
+                          },
+                        ],
+                      ]}
+                      onPress={() => setSelectedSubcategory(subcat)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.subcatPillText,
+                          isSelected && styles.subcatPillTextActive,
+                        ]}
+                      >
+                        {subcat} {count > 0 ? `(${count})` : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Sort By Row */}
+          <View style={styles.sortSection}>
+            <Text style={styles.filterSectionTitle}>Sort By</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.sortScroll}
+            >
+              {[
+                'Popularity',
+                'Price: Low to High',
+                'Price: High to Low',
+                'Rating',
+                'Discount',
+                'New Arrivals',
+              ].map((opt) => {
+                const isSelected = categorySortBy === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    style={[styles.sortPill, isSelected && styles.sortPillActive]}
+                    onPress={() => setCategorySortBy(opt)}
+                    activeOpacity={0.75}
+                  >
+                    <Text
+                      style={[
+                        styles.sortPillText,
+                        isSelected && styles.sortPillTextActive,
+                      ]}
+                    >
+                      {opt}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Active Filter Counter & Reset Bar */}
+          <View style={styles.activeFilterBar}>
+            <Text style={styles.activeFilterCountText}>
+              Showing <Text style={{ fontWeight: '800', color: '#111827' }}>{categoryProducts.length}</Text> products
+              {selectedSubcategory !== 'All' ? ` in ${selectedSubcategory}` : ''}
+            </Text>
+            {(selectedSubcategory !== 'All' ||
+              categorySearchQuery !== '' ||
+              categorySortBy !== 'Popularity' ||
+              filterFastDelivery ||
+              filterVegOnly) && (
+              <TouchableOpacity
+                style={styles.snackResetPill}
+                onPress={() => {
+                  setSelectedSubcategory('All');
+                  setCategorySearchQuery('');
+                  setCategorySortBy('Popularity');
+                  setFilterFastDelivery(false);
+                  setFilterVegOnly(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Icon name="refresh-outline" size={13} color="#059669" />
+                <Text style={[styles.snackResetPillText, { color: '#059669' }]}>Reset Filters</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Product Grid or Empty State */}
+          {categoryProducts.length === 0 ? (
+            <View style={styles.emptyResults}>
+              <View style={styles.emptyIconCircle}>
+                <Icon name="search-outline" size={32} color="#9CA3AF" />
+              </View>
+              <Text style={styles.emptyTitle}>No products match your filters</Text>
+              <Text style={styles.emptySub}>
+                Try selecting a different subcategory or clearing the search query.
+              </Text>
+              <TouchableOpacity
+                style={styles.resetSnackButton}
+                onPress={() => {
+                  setSelectedSubcategory('All');
+                  setCategorySearchQuery('');
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.resetSearchButtonText}>
+                  Show All {currentCatObj?.name} Products
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.gridContainer}>
+              {categoryProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </View>
+          )}
+        </View>
       ) : (
         /* ============================================================ */
-        /* CASE C: STANDARD SHOP HOMEPAGE & OTHER CATEGORIES            */
+        /* CASE D: STANDARD SHOP HOMEPAGE & PROMOTIONS                  */
         /* ============================================================ */
         <View>
           {/* Promotional Banners Section (hidden while searching) */}
           {!isSearching && <BannerCarousel />}
+
+          {/* 16-Category Visual Showcase Grid (Prompt Requirement 2) */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.showcaseCategoriesSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="grid-outline" size={16} color="#059669" />
+                    <Text style={styles.sectionHeading}>Shop By Category</Text>
+                    <View style={styles.countBadgePill}>
+                      <Text style={styles.countBadgePillText}>16 Departments</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Explore our complete grocery, pantry & household departments
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => setActiveTab('categories')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.viewAllText}>View All</Text>
+                  <Icon name="chevron-forward" size={12} color="#059669" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.homeCategoryGrid}>
+                {displayCategories.slice(0, 16).map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={styles.homeCategoryCard}
+                    onPress={() => setSelectedCategory(cat.id)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.homeCatImgWrapper, { borderColor: cat.color || '#10B981' }]}>
+                      {cat.image ? (
+                        <Image source={{ uri: cat.image }} style={styles.homeCatImg} />
+                      ) : (
+                        <View style={[styles.homeCatIconPlaceholder, { backgroundColor: cat.color || '#10B981' }]}>
+                          <Icon name={cat.icon || 'grid-outline'} size={24} color="#FFFFFF" />
+                        </View>
+                      )}
+                      {cat.badge && (
+                        <View style={[styles.homeCatBadge, { backgroundColor: cat.color || '#059669' }]}>
+                          <Text style={styles.homeCatBadgeText}>{cat.badge}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.homeCatTitle} numberOfLines={2}>
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Trending Deals & Offers Carousel */}
+          {!isSearching && selectedCategory === 'all' && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="flame" size={16} color="#EF4444" />
+                    <Text style={styles.sectionHeading}>Trending Deals & Offers</Text>
+                    <View style={[styles.countBadgePill, { backgroundColor: '#FEE2E2' }]}>
+                      <Text style={[styles.countBadgePillText, { color: '#DC2626' }]}>HOT PICKS</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Top savings with up to 25% instant discount
+                  </Text>
+                </View>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {trendingProducts.map((product) => (
+                  <ProductCard
+                    key={`trending-${product.id}`}
+                    product={product}
+                    customWidth={165}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           {/* Quick Filter Bar */}
           <View style={styles.filterBar}>
@@ -2435,5 +2881,75 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#DB2777',
     marginTop: 4,
+  },
+  showcaseCategoriesSection: {
+    marginVertical: 12,
+    paddingHorizontal: 12,
+  },
+  countBadgePill: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 6,
+  },
+  countBadgePillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#065F46',
+  },
+  homeCategoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  homeCategoryCard: {
+    width: '23.5%',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  homeCatImgWrapper: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1.5,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  homeCatImg: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  homeCatIconPlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  homeCatBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  homeCatBadgeText: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  homeCatTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 14,
   },
 });

@@ -13,7 +13,7 @@ import { CATEGORIES } from '../data/products';
 import { CategoryId } from '../types';
 
 export const ExploreScreen: React.FC = () => {
-  const { products, setSelectedCategory, setActiveTab } = useApp();
+  const { products, categories, setSelectedCategory, setActiveTab } = useApp();
 
   const getCategoryStats = (catId: CategoryId) => {
     if (catId === 'all') {
@@ -21,13 +21,17 @@ export const ExploreScreen: React.FC = () => {
     }
     const catProds = products.filter((p) => p.category === catId);
     const minTime = Math.min(...catProds.map((p) => p.deliveryTimeMins), 10);
-    return { count: catProds.length, speed: `${minTime} mins` };
+    return { count: catProds.length, speed: `${minTime || 10} mins` };
   };
 
   const handleSelectCategory = (catId: CategoryId) => {
     setSelectedCategory(catId);
     setActiveTab('home');
   };
+
+  const displayCategories = (categories && categories.length > 0 ? categories : CATEGORIES).filter(
+    (c) => c.id !== 'all'
+  );
 
   return (
     <ScrollView
@@ -36,16 +40,17 @@ export const ExploreScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>All Departments</Text>
+        <Text style={styles.headerTitle}>All 16 Departments</Text>
         <Text style={styles.headerSubtitle}>
-          Select a category to shop fresh items delivered to your doorstep in minutes
+          Select a category to shop fresh items, daily essentials and groceries delivered in 10 minutes
         </Text>
       </View>
 
       <View style={styles.grid}>
-        {CATEGORIES.filter((c) => c.id !== 'all').map((cat) => {
+        {displayCategories.map((cat) => {
           const stats = getCategoryStats(cat.id);
           const sampleProduct = products.find((p) => p.category === cat.id);
+          const displayImg = cat.image || sampleProduct?.image;
 
           return (
             <TouchableOpacity
@@ -55,7 +60,7 @@ export const ExploreScreen: React.FC = () => {
               activeOpacity={0.88}
             >
               <View style={[styles.cardHeader, { backgroundColor: cat.color }]}>
-                <Icon name={cat.icon} size={24} color="#FFFFFF" />
+                <Icon name={cat.icon} size={22} color="#FFFFFF" />
                 <View style={styles.speedPill}>
                   <Icon name="flash" size={10} color="#FFFFFF" />
                   <Text style={styles.speedText}>{stats.speed}</Text>
@@ -63,13 +68,13 @@ export const ExploreScreen: React.FC = () => {
               </View>
 
               <View style={styles.cardBody}>
-                {sampleProduct && (
+                {displayImg && (
                   <Image
-                    source={{ uri: sampleProduct.image }}
+                    source={{ uri: displayImg }}
                     style={styles.sampleImg}
                   />
                 )}
-                <Text style={styles.catName}>{cat.name}</Text>
+                <Text style={styles.catName} numberOfLines={1}>{cat.name}</Text>
                 <Text style={styles.itemsCount}>{stats.count} Products</Text>
 
                 {cat.badge && (
