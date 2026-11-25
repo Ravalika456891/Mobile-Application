@@ -564,6 +564,7 @@ export const mapCategoryToLegacy = (cat: string): string[] => {
     case 'rice-grains':
       return ['atta-rice-dal-grains', 'rice-grains'];
     case 'cooking-oils-essentials':
+    case 'cooking-essentials':
       return ['cooking-oils-essentials', 'cooking-essentials'];
     case 'snacks-munchies':
       return ['snacks-munchies', 'snacks'];

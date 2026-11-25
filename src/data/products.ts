@@ -29,6 +29,7 @@ import { MARKETPLACE_ADDITIONAL_PRODUCTS } from './marketplaceProducts';
 import { PHASE1_FOOD_PRODUCTS } from './phase1Products';
 import { LIFESTYLE_MARKETPLACE_PRODUCTS } from './lifestyleProducts';
 import { GRAINS_STAPLES_PRODUCTS } from './grainsProducts';
+import { COOKING_ESSENTIALS_PRODUCTS } from './cookingEssentialsProducts';
 
 export {
   CATEGORIES,
@@ -1151,61 +1152,8 @@ export const PRODUCTS: Product[] = [
   // ----------------- ATTA, RICE, DAL & GRAINS (34 PRODUCTS) -----------------
   ...GRAINS_STAPLES_PRODUCTS,
 
-  // ----------------- COOKING ESSENTIALS -----------------
-  {
-    id: 'ce-1',
-    name: 'Cold-Pressed Extra Virgin Olive Oil',
-    category: 'cooking-essentials',
-    subcategory: 'Cooking Oil',
-    price: 499,
-    originalPrice: 599,
-    weightOrSize: '1 L',
-    rating: 4.9,
-    reviewsCount: 275,
-    deliveryTimeMins: 12,
-    image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&auto=format&fit=crop&q=80',
-    inStock: true,
-    stockCount: 15,
-    isVeg: true,
-    description: 'Single-estate extra virgin olive oil extracted via cold pressing under 27°C. Perfect for dressing, sautéing, and dips.',
-    tags: ['First Cold Press', 'Heart Healthy'],
-  },
-  {
-    id: 'ce-2',
-    name: 'Pure Himalayan Pink Rock Salt',
-    category: 'cooking-essentials',
-    subcategory: 'Salt & Spices',
-    price: 85,
-    originalPrice: 110,
-    weightOrSize: '1 kg',
-    rating: 4.8,
-    reviewsCount: 310,
-    deliveryTimeMins: 10,
-    image: 'https://images.unsplash.com/photo-1607672632458-9eb56696346b?w=600&auto=format&fit=crop&q=80',
-    inStock: true,
-    stockCount: 50,
-    isVeg: true,
-    description: 'Mineral-rich pristine pink rock salt sourced from the Himalayan foothills. Naturally unrefined with 84 trace minerals.',
-    tags: ['Unrefined', '84 Minerals'],
-  },
-  {
-    id: 'ce-3',
-    name: 'Raw Wild Blossom Honey',
-    category: 'cooking-essentials',
-    subcategory: 'Sweeteners',
-    price: 260,
-    originalPrice: 310,
-    weightOrSize: '500g',
-    rating: 4.9,
-    reviewsCount: 230,
-    deliveryTimeMins: 12,
-    image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=600&auto=format&fit=crop&q=80',
-    inStock: true,
-    stockCount: 25,
-    isVeg: true,
-    description: '100% pure raw honey collected from forest wildflowers. Unpasteurized and unfiltered to preserve active enzymes and antioxidants.',
-    tags: ['100% Pure', 'Immunity Boost'],
-  },
+  // ----------------- COOKING OILS & ESSENTIALS (23 PRODUCTS) -----------------
+  ...COOKING_ESSENTIALS_PRODUCTS,
 
   // ----------------- SNACKS AND MUNCHIES -----------------
   ...SNACKS_PRODUCTS,
@@ -2479,5 +2427,6 @@ export * from './FruitProduct';
 export { fruits, popularFruits, searchFruits } from './quickmart_fruits';
 export { VEGETABLES, popularVegetables, VEGETABLE_SUBCATEGORIES };
 export { GRAINS_STAPLES_PRODUCTS };
+export { COOKING_ESSENTIALS_PRODUCTS };
 export { SPICES_MASALA_PRODUCTS } from './spicesProducts';
 export type { VegetableSubcategory };
