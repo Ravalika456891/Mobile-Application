@@ -136,17 +136,18 @@ async function main() {
 
   if (keyPath) {
     console.log(`[AUTH] Using authorized Service Account: ${keyPath}`);
-    const admin = require('firebase-admin');
+    const { initializeApp, getApps, cert } = require('firebase-admin/app');
+    const { getFirestore } = require('firebase-admin/firestore');
     const serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
 
-    if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: PROJECT_ID,
-      });
-    }
+    const app = !getApps().length
+      ? initializeApp({
+          credential: cert(serviceAccount),
+          projectId: PROJECT_ID,
+        })
+      : getApps()[0];
 
-    const db = admin.firestore();
+    const db = getFirestore(app);
     console.log('[1/3] Connecting to Cloud Firestore via Admin SDK...');
     const docRef = db.collection(COLLECTION_NAME).doc(DOCUMENT_ID);
 

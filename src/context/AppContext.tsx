@@ -260,19 +260,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addProduct = (newProduct: Product) => {
     setProducts((prev) => [newProduct, ...prev]);
-    addProductDB(newProduct).catch(() => {});
+    addProductDB(newProduct).catch(() => { });
     showToast(`Added ${newProduct.name} to catalog! 🎉`);
   };
 
   const deleteProduct = (productId: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== productId));
-    deleteProductDB(productId).catch(() => {});
+    deleteProductDB(productId).catch(() => { });
     showToast('Product removed from catalog 🗑️');
   };
 
   const addCategory = (newCat: Category) => {
     setCategories((prev) => [...prev, newCat]);
-    addCategoryDB(newCat).catch(() => {});
+    addCategoryDB(newCat).catch(() => { });
     showToast(`Category ${newCat.name} created! 🏷️`);
   };
 
@@ -280,13 +280,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCategories((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
     );
-    updateCategoryDB(id, updates).catch(() => {});
+    updateCategoryDB(id, updates).catch(() => { });
     showToast('Category updated! ✏️');
   };
 
   const deleteCategory = (id: string) => {
     setCategories((prev) => prev.filter((c) => c.id !== id));
-    deleteCategoryDB(id).catch(() => {});
+    deleteCategoryDB(id).catch(() => { });
     showToast('Category deleted! 🗑️');
   };
 
@@ -302,7 +302,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return c;
       })
     );
-    addSubcategoryDB(catId, subcategory).catch(() => {});
+    addSubcategoryDB(catId, subcategory).catch(() => { });
     showToast(`Added subcategory: ${subcategory}`);
   };
 
@@ -318,7 +318,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return c;
       })
     );
-    deleteSubcategoryDB(catId, subcategory).catch(() => {});
+    deleteSubcategoryDB(catId, subcategory).catch(() => { });
     showToast(`Removed subcategory: ${subcategory}`);
   };
 
@@ -429,7 +429,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSelectedProduct(prod);
     if (prod) {
       setRecentlyViewedIds((prev) => [prod.id, ...prev.filter((id) => id !== prod.id)].slice(0, 15));
-      addToRecentlyViewedDB(prod.id).catch(() => {});
+      addToRecentlyViewedDB(prod.id).catch(() => { });
     }
   };
 
@@ -781,7 +781,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setActiveOrder(newOrder);
     setOrdersList((prev) => [newOrder, ...prev]);
-    saveOrderDB(newOrder).catch(() => {});
+    saveOrderDB(newOrder).catch(() => { });
     setCart([]);
     setAppliedCoupon(null);
     setActiveTab('tracking');
