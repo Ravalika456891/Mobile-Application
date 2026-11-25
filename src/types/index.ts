@@ -161,6 +161,9 @@ export interface Product {
   brand?: string;
   discountPercentage?: number;
   featured?: boolean;
+  isSamplePrice?: boolean;
+  isSampleStock?: boolean;
+  currency?: string;
   createdAt?: string;
   updatedAt?: string;
 

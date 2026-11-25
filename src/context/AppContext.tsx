@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, CartItem, Order, OrderStage, Coupon, CategoryId, Category, ProductVariant, DeliveryAddress, DeliveryZone } from '../types';
 import { PRODUCTS, AVAILABLE_COUPONS, CATEGORIES } from '../data/products';
+import { getAllProductsWithFirestore } from '../services/productService';
 import {
   LocalUser,
   initDatabase,
@@ -152,6 +153,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [authScreen, setAuthScreen] = useState<'login' | 'register' | null>(null);
 
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
+
+  // Sync products from Cloud Firestore (falls back to local catalog automatically)
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const mergedProducts = await getAllProductsWithFirestore(true);
+        if (isMounted && mergedProducts && mergedProducts.length > 0) {
+          setProducts(mergedProducts);
+        }
+      } catch (err) {
+        console.warn('[AppContext] Firestore sync notice (using local products fallback):', err);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   const [categories, setCategories] = useState<Category[]>(CATEGORIES);
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
   const [initialLoginMode, setInitialLoginMode] = useState<'customer' | 'admin'>('customer');

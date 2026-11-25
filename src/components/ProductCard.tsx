@@ -187,6 +187,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <Text style={styles.reviewsText}>({product.reviewsCount})</Text>
         </View>
 
+        {/* Sample Identification (Price & Inventory) */}
+        {(product.isSamplePrice || product.isSampleStock) && (
+          <View style={styles.sampleRow}>
+            {product.isSamplePrice && (
+              <View style={styles.sampleBadge}>
+                <Text style={styles.sampleBadgeText}>Sample Price</Text>
+              </View>
+            )}
+            {product.isSampleStock && (
+              <View style={styles.sampleStockBadge}>
+                <Text style={styles.sampleStockText}>Stock: {product.stockCount} (Sample)</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Price & Add to Cart Row */}
         <View style={styles.bottomRow}>
           <View style={styles.priceContainer}>
@@ -509,5 +525,38 @@ const styles = StyleSheet.create({
   },
   sugarBadgeTextBlue: {
     color: '#2563EB',
+  },
+  sampleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+    flexWrap: 'wrap',
+  },
+  sampleBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: '#F59E0B',
+  },
+  sampleBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#B45309',
+  },
+  sampleStockBadge: {
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: '#A855F7',
+  },
+  sampleStockText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#7E22CE',
   },
 });
