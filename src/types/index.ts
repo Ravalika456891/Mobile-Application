@@ -1,5 +1,6 @@
 export type CategoryId = 
   | 'all'
+  // Phase 1: Core Grocery (1-13)
   | 'fruits-vegetables'
   | 'dairy-bread-eggs'
   | 'atta-rice-dal-grains'
@@ -13,7 +14,24 @@ export type CategoryId =
   | 'frozen-icecream'
   | 'sauces-spreads'
   | 'meat-seafood-eggs'
-  // Compatibility aliases
+  // Phase 2: Everyday Essentials (14-21)
+  | 'personal-care'
+  | 'beauty-cosmetics'
+  | 'home-care'
+  | 'baby-care'
+  | 'pet-care'
+  | 'kitchen-dining'
+  | 'home-living'
+  | 'stationery-office'
+  // Phase 3: Lifestyle Marketplace (22-28)
+  | 'electronics-accessories'
+  | 'fashion-accessories'
+  | 'jewellery-accessories'
+  | 'health-wellness'
+  | 'toys-games'
+  | 'pooja-essentials'
+  | 'books-gifts'
+  // Compatibility & Legacy Aliases
   | 'vegetables'
   | 'fruits'
   | 'rice-grains'
@@ -23,17 +41,14 @@ export type CategoryId =
   | 'cooking-essentials'
   | 'bakery'
   | 'frozen-foods'
-  | 'personal-care'
-  | 'home-care'
-  | 'baby-care'
   | 'pet-supplies'
-  | 'stationery'
   | 'kitchen-home'
   | 'household'
   | 'groceries'
   | 'icecreams'
   | 'clothing'
-  | 'accessories';
+  | 'accessories'
+  | 'stationery';
 
 export interface Category {
   id: CategoryId;
@@ -68,8 +83,64 @@ export interface VolumeOption {
   originalPrice?: number;
 }
 
+export interface ProductVariant {
+  id?: string;
+  sku?: string;
+  name?: string;          // Variant display name, e.g. '500g', 'XL', 'Ruby Red'
+  size?: string;          // e.g. '500g', '1kg', 'XL', '250 ml', '128GB'
+  color?: string;         // e.g. 'Midnight Blue', 'Matte Black'
+  colorCode?: string;     // e.g. '#000000', '#10B981'
+  shade?: string;         // e.g. 'Ruby Red', 'Warm Beige'
+  material?: string;      // e.g. '100% Cotton', 'Pure Brass'
+  model?: string;         // e.g. 'Pro', 'Max'
+  price: number;
+  originalPrice?: number;
+  stock?: number;
+  stockCount?: number;
+  inStock?: boolean;
+}
+
+export interface ProductAttribute {
+  name: string;
+  value: string;
+}
+
+export interface DeliveryAddress {
+  id: string;
+  userId?: number;
+  type?: 'home' | 'office' | 'other' | string;
+  name?: string;
+  flat?: string;
+  street?: string;
+  landmark?: string;
+  title: string;        // 'Home' | 'Office' | 'Other'
+  address: string;
+  pincode: string;
+  city?: string;
+  state?: string;
+  phone?: string;
+  isDefault?: boolean;
+}
+
+export interface DeliveryZone {
+  id?: string;
+  name?: string;
+  description?: string;
+  pincode: string;
+  pincodes?: string[];
+  area: string;
+  city: string;
+  isServiceable: boolean;
+  deliveryTimeMins: number;
+  estimatedMinutes?: number;
+  deliveryFee: number;
+  minOrderAmount?: number;
+  freeDeliveryThreshold: number;
+}
+
 export interface Product {
   id: string;
+  sku?: string;
   name: string;
   category: CategoryId;
   subcategory: string;
@@ -80,22 +151,34 @@ export interface Product {
   reviewsCount: number;
   deliveryTimeMins: number;
   image: string;
+  images?: string[];
   inStock: boolean;
   stockCount: number;
   description: string;
   tags?: string[];
-  isVeg?: boolean;
-  isVegan?: boolean;
-  isJainFriendly?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  brand?: string;
   discountPercentage?: number;
   featured?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 
-  // Beverage & Detailed Product Specifications
-  brand?: string;
-  flavour?: string;
+  // Reusable variant & attributes system
+  variants?: ProductVariant[];
   volumeOptions?: VolumeOption[];
+  attributes?: ProductAttribute[];
+
+  // Food & Grocery Specifications
+  isVeg?: boolean;
+  isNonVeg?: boolean;
+  isVegan?: boolean;
+  isJainFriendly?: boolean;
+  storageType?: 'ambient' | 'refrigerated' | 'frozen';
+  temperature?: string;
+  freshnessBadge?: string;
+  meatCut?: string;
+  unit?: string;
+  availableQuantity?: number;
+  flavour?: string;
   sugarLabel?: 'Sugar-Free' | 'Low-Sugar' | 'Zero Added Sugar' | 'Naturally Sweet' | 'Classic';
   isSugarVerified?: boolean;
   ingredients?: string;
@@ -104,20 +187,26 @@ export interface Product {
   expiryDate?: string;
   storageInstructions?: string;
 
-  // Phase 1: Food-specific & Grocery metadata
-  isNonVeg?: boolean;
-  storageType?: 'ambient' | 'refrigerated' | 'frozen';
-  temperature?: string;
-  freshnessBadge?: string;
-  meatCut?: string;
-  unit?: string;
-  availableQuantity?: number;
-  images?: string[];
+  // Lifestyle, Beauty & Electronics Specifications
+  skinType?: string;
+  hairType?: string;
+  shade?: string;
+  color?: string;
+  size?: string;
+  material?: string;
+  gender?: 'Men' | 'Women' | 'Kids' | 'Unisex';
+  modelNumber?: string;
+  warranty?: string;
+  storageCapacity?: string;
+  ageGroup?: string;
+  author?: string;
+  publisher?: string;
 }
 
 export interface CartItem {
   product: Product;
   quantity: number;
+  selectedVariant?: ProductVariant;
 }
 
 export type OrderStage = 

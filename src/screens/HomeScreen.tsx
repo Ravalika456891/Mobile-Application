@@ -1496,11 +1496,11 @@ export const HomeScreen: React.FC = () => {
                     <Icon name="grid-outline" size={16} color="#059669" />
                     <Text style={styles.sectionHeading}>Shop By Category</Text>
                     <View style={styles.countBadgePill}>
-                      <Text style={styles.countBadgePillText}>13 Core Categories</Text>
+                      <Text style={styles.countBadgePillText}>{displayCategories.length} Departments</Text>
                     </View>
                   </View>
                   <Text style={styles.sectionSubheading}>
-                    Explore our complete grocery, food & fresh daily essentials
+                    Explore our complete grocery, essentials, electronics & lifestyle marketplace
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -1508,13 +1508,13 @@ export const HomeScreen: React.FC = () => {
                   onPress={() => setActiveTab('categories')}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.viewAllText}>View All</Text>
+                  <Text style={styles.viewAllText}>View All ({displayCategories.length})</Text>
                   <Icon name="chevron-forward" size={12} color="#059669" />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.homeCategoryGrid}>
-                {displayCategories.slice(0, 16).map((cat) => (
+                {displayCategories.map((cat) => (
                   <TouchableOpacity
                     key={cat.id}
                     style={styles.homeCategoryCard}

@@ -17,6 +17,14 @@ export const Header: React.FC = () => {
   const {
     selectedAddress,
     setSelectedAddress,
+    addresses,
+    selectedDeliveryAddress,
+    setSelectedDeliveryAddress,
+    addDeliveryAddress,
+    checkPincodeServiceability,
+    recentSearches,
+    addRecentSearch,
+    clearRecentSearches,
     searchQuery,
     setSearchQuery,
     setActiveTab,
@@ -29,25 +37,77 @@ export const Header: React.FC = () => {
   } = useApp();
 
   const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [showAddAddressForm, setShowAddAddressForm] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  // New Address Form States
+  const [newType, setNewType] = useState<'home' | 'office' | 'other'>('home');
+  const [newName, setNewName] = useState('');
+  const [newFlat, setNewFlat] = useState('');
+  const [newStreet, setNewStreet] = useState('');
+  const [newCity, setNewCity] = useState('Bangalore');
+  const [newPincode, setNewPincode] = useState('');
+  const [newPhone, setNewPhone] = useState('+91 98765 43210');
+  const [pincodeStatus, setPincodeStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchQuery.trim().length >= 2) {
-      getSearchSuggestionsDB(searchQuery, 6).then((res) => {
-        setSuggestions(res);
-      }).catch(() => {
-        setSuggestions([]);
-      });
+      getSearchSuggestionsDB(searchQuery, 6)
+        .then((res) => {
+          setSuggestions(res);
+        })
+        .catch(() => {
+          setSuggestions([]);
+        });
     } else {
       setSuggestions([]);
     }
   }, [searchQuery]);
 
-  const savedAddresses = [
-    { id: '1', title: 'Home', address: 'Flat 402, Green Valley Apts, Silicon Boulevard' },
-    { id: '2', title: 'Office', address: 'Floor 7, TechHub Tower, Innovation Way' },
-    { id: '3', title: 'Studio', address: 'Loft 14, Arts District, Maple Street' },
-  ];
+  const handleSelectSearch = (term: string) => {
+    setSearchQuery(term);
+    addRecentSearch(term);
+    setSearchFocused(false);
+  };
+
+  const handleVerifyPincode = async () => {
+    if (!newPincode.trim() || newPincode.trim().length < 6) {
+      showToast('Please enter a valid 6-digit PIN code');
+      return;
+    }
+    const res = await checkPincodeServiceability(newPincode.trim());
+    setPincodeStatus(res.message);
+  };
+
+  const handleSaveAddress = async () => {
+    if (!newFlat.trim() || !newStreet.trim() || !newPincode.trim()) {
+      showToast('Please fill flat, street and pincode');
+      return;
+    }
+    const flatStr = newFlat.trim();
+    const streetStr = newStreet.trim();
+    const cityStr = newCity.trim() || 'Bangalore';
+    const pinStr = newPincode.trim();
+    const titleStr = newName.trim() || (newType === 'home' ? 'Home' : 'Office');
+    const created = await addDeliveryAddress({
+      userId: currentUser?.id || 1,
+      type: newType,
+      name: titleStr,
+      title: titleStr,
+      flat: flatStr,
+      street: streetStr,
+      address: `${flatStr}, ${streetStr}, ${cityStr} - ${pinStr}`,
+      city: cityStr,
+      state: 'Karnataka',
+      pincode: pinStr,
+      phone: newPhone.trim(),
+      isDefault: false,
+    });
+    setSelectedDeliveryAddress(created);
+    setShowAddAddressForm(false);
+    setAddressModalVisible(false);
+  };
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
@@ -57,6 +117,8 @@ export const Header: React.FC = () => {
   };
 
   const displayName = currentUser?.name || 'Ravalika';
+
+  const POPULAR_SEARCHES = ['Basmati Rice', 'Amul Butter', 'Lay\'s', 'Face Cream', 'Earbuds', 'Dry Fruits'];
 
   return (
     <View style={styles.container}>
@@ -120,17 +182,24 @@ export const Header: React.FC = () => {
 
         <TouchableOpacity
           style={styles.addressSelector}
-          onPress={() => setAddressModalVisible(true)}
+          onPress={() => {
+            setShowAddAddressForm(false);
+            setAddressModalVisible(true);
+          }}
           activeOpacity={0.7}
         >
           <Icon name="location-outline" size={14} color="#059669" />
           <View style={styles.addressMeta}>
             <View style={styles.deliverToRow}>
-              <Text style={styles.deliverToLabel}>DELIVER TO</Text>
+              <Text style={styles.deliverToLabel}>
+                DELIVER TO ({selectedDeliveryAddress?.type?.toUpperCase() || 'HOME'})
+              </Text>
               <Icon name="chevron-down" size={11} color="#059669" />
             </View>
             <Text style={styles.addressValue} numberOfLines={1}>
-              {selectedAddress}
+              {selectedDeliveryAddress
+                ? `${selectedDeliveryAddress.flat}, ${selectedDeliveryAddress.street} (${selectedDeliveryAddress.pincode})`
+                : selectedAddress}
             </Text>
           </View>
         </TouchableOpacity>
@@ -142,10 +211,17 @@ export const Header: React.FC = () => {
           <Icon name="search" size={18} color="#6B7280" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search groceries, milk, tea, coffee, chicken..."
+            placeholder="Search all 28 categories: food, electronics, beauty..."
             placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            onFocus={() => setSearchFocused(true)}
+            onSubmitEditing={() => {
+              if (searchQuery.trim()) {
+                addRecentSearch(searchQuery.trim());
+              }
+              setSearchFocused(false);
+            }}
             returnKeyType="search"
             clearButtonMode="while-editing"
           />
@@ -160,7 +236,7 @@ export const Header: React.FC = () => {
           )}
         </View>
 
-        {/* Live Search Suggestions */}
+        {/* Live Search Suggestions (Autocomplete) */}
         {suggestions.length > 0 && searchQuery.length > 0 && (
           <ScrollView
             horizontal
@@ -171,7 +247,7 @@ export const Header: React.FC = () => {
               <TouchableOpacity
                 key={idx}
                 style={styles.suggestionPill}
-                onPress={() => setSearchQuery(s)}
+                onPress={() => handleSelectSearch(s)}
                 activeOpacity={0.8}
               >
                 <Icon name="search-outline" size={11} color="#059669" />
@@ -182,81 +258,254 @@ export const Header: React.FC = () => {
             ))}
           </ScrollView>
         )}
+
+        {/* Recent Searches & Popular Searches When Search Is Focused & Input is empty */}
+        {searchFocused && searchQuery.length === 0 && (
+          <View style={styles.searchDropdownCard}>
+            {recentSearches.length > 0 && (
+              <View style={{ marginBottom: 10 }}>
+                <View style={styles.searchDropdownHeader}>
+                  <Text style={styles.searchDropdownTitle}>Recent Searches</Text>
+                  <TouchableOpacity onPress={clearRecentSearches}>
+                    <Text style={styles.searchClearText}>Clear</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.searchTagsWrap}>
+                  {recentSearches.slice(0, 6).map((term, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={styles.recentSearchTag}
+                      onPress={() => handleSelectSearch(term)}
+                    >
+                      <Icon name="time-outline" size={12} color="#6B7280" />
+                      <Text style={styles.recentSearchTagText}>{term}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <View>
+              <Text style={styles.searchDropdownTitle}>Popular Right Now 🔥</Text>
+              <View style={styles.searchTagsWrap}>
+                {POPULAR_SEARCHES.map((term, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.popularSearchTag}
+                    onPress={() => handleSelectSearch(term)}
+                  >
+                    <Icon name="trending-up" size={12} color="#059669" />
+                    <Text style={styles.popularSearchTagText}>{term}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
       </View>
 
-      {/* Delivery Location Selection Modal */}
+      {/* Delivery Location Selection & Management Modal */}
       <Modal
         visible={addressModalVisible}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setAddressModalVisible(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setAddressModalVisible(false)}
-        >
+        <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
                 <Icon name="location" size={18} color="#059669" />
-                <Text style={styles.modalTitle}>Choose Delivery Address</Text>
+                <Text style={styles.modalTitle}>
+                  {showAddAddressForm ? 'Add Delivery Address' : 'Select Delivery Location'}
+                </Text>
               </View>
               <TouchableOpacity
-                onPress={() => setAddressModalVisible(false)}
+                onPress={() => {
+                  setAddressModalVisible(false);
+                  setShowAddAddressForm(false);
+                }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Icon name="close" size={20} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
-            {savedAddresses.map((addr) => {
-              const isSelected = selectedAddress === addr.address;
-              return (
-                <TouchableOpacity
-                  key={addr.id}
-                  style={[
-                    styles.addressItem,
-                    isSelected && styles.addressItemSelected,
-                  ]}
-                  onPress={() => {
-                    setSelectedAddress(addr.address);
-                    setAddressModalVisible(false);
-                    showToast(`Delivery location set to ${addr.title}`);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View
-                    style={[
-                      styles.radioCircle,
-                      isSelected && styles.radioCircleSelected,
-                    ]}
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              {!showAddAddressForm ? (
+                <>
+                  {addresses.map((addr) => {
+                    const isSelected = selectedDeliveryAddress?.id === addr.id;
+                    return (
+                      <TouchableOpacity
+                        key={addr.id}
+                        style={[
+                          styles.addressItem,
+                          isSelected && styles.addressItemSelected,
+                        ]}
+                        onPress={() => {
+                          setSelectedDeliveryAddress(addr);
+                          setAddressModalVisible(false);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View
+                          style={[
+                            styles.radioCircle,
+                            isSelected && styles.radioCircleSelected,
+                          ]}
+                        >
+                          {isSelected && <View style={styles.radioInnerDot} />}
+                        </View>
+
+                        <View style={{ flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Text
+                              style={[
+                                styles.addressTitleText,
+                                isSelected && styles.addressTitleTextSelected,
+                              ]}
+                            >
+                              {addr.name}
+                            </Text>
+                            <View style={styles.addressTypeBadge}>
+                              <Text style={styles.addressTypeBadgeText}>
+                                {(addr.type || 'home').toUpperCase()}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={styles.addressFullText} numberOfLines={2}>
+                            {addr.flat}, {addr.street}, {addr.city} - {addr.pincode}
+                          </Text>
+                          <Text style={styles.addressPhoneText}>📞 {addr.phone}</Text>
+                        </View>
+
+                        {isSelected && (
+                          <Icon name="checkmark-circle" size={18} color="#059669" />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+
+                  <TouchableOpacity
+                    style={styles.addNewAddrBtn}
+                    onPress={() => setShowAddAddressForm(true)}
+                    activeOpacity={0.8}
                   >
-                    {isSelected && <View style={styles.radioInnerDot} />}
+                    <Icon name="add-circle-outline" size={18} color="#059669" />
+                    <Text style={styles.addNewAddrBtnText}>+ Add New Address</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <View style={styles.addFormContainer}>
+                  {/* Address Type Selector */}
+                  <View style={styles.typeSelectorRow}>
+                    {(['home', 'office', 'other'] as const).map((t) => (
+                      <TouchableOpacity
+                        key={t}
+                        style={[
+                          styles.typePill,
+                          newType === t && styles.typePillActive,
+                        ]}
+                        onPress={() => setNewType(t)}
+                      >
+                        <Icon
+                          name={t === 'home' ? 'home' : t === 'office' ? 'business' : 'location'}
+                          size={14}
+                          color={newType === t ? '#FFFFFF' : '#4B5563'}
+                        />
+                        <Text
+                          style={[
+                            styles.typePillText,
+                            newType === t && styles.typePillTextActive,
+                          ]}
+                        >
+                          {t.toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
 
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[
-                        styles.addressTitleText,
-                        isSelected && styles.addressTitleTextSelected,
-                      ]}
-                    >
-                      {addr.title}
-                    </Text>
-                    <Text style={styles.addressFullText} numberOfLines={1}>
-                      {addr.address}
-                    </Text>
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="Address Label (e.g. My Apartment, HQ)"
+                    value={newName}
+                    onChangeText={setNewName}
+                  />
+
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="Flat / House / Door No. *"
+                    value={newFlat}
+                    onChangeText={setNewFlat}
+                  />
+
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="Street / Area / Colony *"
+                    value={newStreet}
+                    onChangeText={setNewStreet}
+                  />
+
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TextInput
+                      style={[styles.formInput, { flex: 1 }]}
+                      placeholder="City"
+                      value={newCity}
+                      onChangeText={setNewCity}
+                    />
+                    <TextInput
+                      style={[styles.formInput, { flex: 1 }]}
+                      placeholder="PIN Code *"
+                      keyboardType="numeric"
+                      maxLength={6}
+                      value={newPincode}
+                      onChangeText={(t) => {
+                        setNewPincode(t);
+                        setPincodeStatus(null);
+                      }}
+                    />
                   </View>
 
-                  {isSelected && (
-                    <Icon name="checkmark-circle" size={18} color="#059669" />
+                  {/* Pincode verification button */}
+                  <TouchableOpacity
+                    style={styles.verifyPincodeBtn}
+                    onPress={handleVerifyPincode}
+                  >
+                    <Icon name="shield-checkmark" size={13} color="#059669" />
+                    <Text style={styles.verifyPincodeBtnText}>Verify PIN Code Serviceability</Text>
+                  </TouchableOpacity>
+                  {pincodeStatus && (
+                    <Text style={styles.pincodeStatusText}>{pincodeStatus}</Text>
                   )}
-                </TouchableOpacity>
-              );
-            })}
+
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="Mobile Number"
+                    keyboardType="phone-pad"
+                    value={newPhone}
+                    onChangeText={setNewPhone}
+                  />
+
+                  <View style={styles.formActionButtons}>
+                    <TouchableOpacity
+                      style={styles.cancelBtn}
+                      onPress={() => setShowAddAddressForm(false)}
+                    >
+                      <Text style={styles.cancelBtnText}>Back</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.saveAddrBtn}
+                      onPress={handleSaveAddress}
+                    >
+                      <Text style={styles.saveAddrBtnText}>Save & Deliver Here</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
@@ -531,5 +780,202 @@ const styles = StyleSheet.create({
   addressFullText: {
     fontSize: 11,
     color: '#6B7280',
+  },
+  addressPhoneText: {
+    fontSize: 10.5,
+    color: '#059669',
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  addressTypeBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+  },
+  addressTypeBadgeText: {
+    fontSize: 9.5,
+    color: '#0369A1',
+    fontWeight: '800',
+  },
+  addNewAddrBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: '#059669',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    marginTop: 6,
+    backgroundColor: '#F0FDF4',
+  },
+  addNewAddrBtnText: {
+    color: '#059669',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  addFormContainer: {
+    paddingVertical: 4,
+  },
+  typeSelectorRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  typePill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  typePillActive: {
+    backgroundColor: '#059669',
+    borderColor: '#059669',
+  },
+  typePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  typePillTextActive: {
+    color: '#FFFFFF',
+  },
+  formInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+    fontSize: 13,
+    color: '#1F2937',
+    marginBottom: 10,
+  },
+  verifyPincodeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  verifyPincodeBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  pincodeStatusText: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  formActionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: '#4B5563',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  saveAddrBtn: {
+    flex: 2,
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: '#059669',
+    alignItems: 'center',
+  },
+  saveAddrBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  searchDropdownCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  searchDropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  searchDropdownTitle: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  searchClearText: {
+    fontSize: 11,
+    color: '#EF4444',
+    fontWeight: '600',
+  },
+  searchTagsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  recentSearchTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  recentSearchTagText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  popularSearchTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  popularSearchTagText: {
+    fontSize: 12,
+    color: '#065F46',
+    fontWeight: '600',
   },
 });

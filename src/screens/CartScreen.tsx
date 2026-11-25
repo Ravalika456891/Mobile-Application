@@ -25,6 +25,7 @@ export const CartScreen: React.FC = () => {
     removeCoupon,
     placeOrder,
     selectedAddress,
+    selectedDeliveryAddress,
     products,
     setActiveTab,
   } = useApp();
@@ -117,36 +118,48 @@ export const CartScreen: React.FC = () => {
 
         <View style={styles.cardBox}>
           <Text style={styles.boxTitle}>Cart Items ({cart.length})</Text>
-          {cart.map((item) => (
-            <View key={item.product.id} style={styles.cartRow}>
-              <Image source={{ uri: item.product.image }} style={styles.productThumb} />
-              <View style={styles.itemMeta}>
-                <Text style={styles.itemName} numberOfLines={2}>
-                  {item.product.name}
-                </Text>
-                <Text style={styles.itemWeight}>{item.product.weightOrSize}</Text>
-                <Text style={styles.itemPrice}>
-                  ₹{(item.product.price * item.quantity)}
-                </Text>
-              </View>
+          {cart.map((item, idx) => {
+            const itemPrice = item.selectedVariant ? item.selectedVariant.price : item.product.price;
+            const itemKey = `${item.product.id}-${item.selectedVariant?.id || idx}`;
+            return (
+              <View key={itemKey} style={styles.cartRow}>
+                <Image source={{ uri: item.product.image }} style={styles.productThumb} />
+                <View style={styles.itemMeta}>
+                  <Text style={styles.itemName} numberOfLines={2}>
+                    {item.product.name}
+                  </Text>
+                  {item.selectedVariant ? (
+                    <View style={styles.variantCartPill}>
+                      <Text style={styles.variantCartPillText}>
+                        Option: {item.selectedVariant.name || item.selectedVariant.size || 'Variant'}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.itemWeight}>{item.product.weightOrSize}</Text>
+                  )}
+                  <Text style={styles.itemPrice}>
+                    ₹{(itemPrice * item.quantity)}
+                  </Text>
+                </View>
 
-              <View style={styles.qtyControl}>
-                <TouchableOpacity
-                  style={styles.qtyStepBtn}
-                  onPress={() => removeFromCart(item.product.id)}
-                >
-                  <Icon name="remove" size={14} color="#10B981" />
-                </TouchableOpacity>
-                <Text style={styles.qtyVal}>{item.quantity}</Text>
-                <TouchableOpacity
-                  style={styles.qtyStepBtn}
-                  onPress={() => addToCart(item.product)}
-                >
-                  <Icon name="add" size={14} color="#10B981" />
-                </TouchableOpacity>
+                <View style={styles.qtyControl}>
+                  <TouchableOpacity
+                    style={styles.qtyStepBtn}
+                    onPress={() => removeFromCart(item.product.id, item.selectedVariant?.id)}
+                  >
+                    <Icon name="remove" size={14} color="#10B981" />
+                  </TouchableOpacity>
+                  <Text style={styles.qtyVal}>{item.quantity}</Text>
+                  <TouchableOpacity
+                    style={styles.qtyStepBtn}
+                    onPress={() => addToCart(item.product, item.selectedVariant)}
+                  >
+                    <Icon name="add" size={14} color="#10B981" />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         <View style={styles.cardBox}>
@@ -337,9 +350,18 @@ export const CartScreen: React.FC = () => {
         <View style={styles.addressCard}>
           <Icon name="location" size={18} color="#10B981" />
           <View style={styles.addrTextCol}>
-            <Text style={styles.addrHeading}>Delivering to</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.addrHeading}>Delivering to</Text>
+              {selectedDeliveryAddress && (
+                <View style={styles.addrTypePill}>
+                  <Text style={styles.addrTypePillText}>{(selectedDeliveryAddress.type || 'home').toUpperCase()}</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.addrVal} numberOfLines={2}>
-              {selectedAddress}
+              {selectedDeliveryAddress
+                ? `${selectedDeliveryAddress.flat}, ${selectedDeliveryAddress.street}, ${selectedDeliveryAddress.city} - ${selectedDeliveryAddress.pincode}`
+                : selectedAddress}
             </Text>
           </View>
         </View>
@@ -847,5 +869,31 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
+  },
+  variantCartPill: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  variantCartPillText: {
+    fontSize: 11,
+    color: '#1D4ED8',
+    fontWeight: '700',
+  },
+  addrTypePill: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+  },
+  addrTypePillText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#065F46',
   },
 });

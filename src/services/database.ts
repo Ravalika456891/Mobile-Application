@@ -1,4 +1,4 @@
-import { Product, Category } from '../types';
+import { Product, Category, DeliveryAddress, DeliveryZone, ProductVariant } from '../types';
 import { PRODUCTS, CATEGORIES } from '../data/products';
 import { SNACK_SUBCATEGORIES } from '../data/snacks';
 
@@ -74,12 +74,117 @@ const memoryStore = {
     mobile: '9876543210',
     created_at: new Date().toISOString(),
   } as LocalUser | null,
-  cart: [] as { product_id: string; quantity: number }[],
+  cart: [] as { product_id: string; quantity: number; variant?: ProductVariant }[],
   wishlist: [] as string[],
   recentlyViewed: [] as string[],
+  recentSearches: ['Tata Tea', 'boAt Earbuds', 'Maggi Noodles', 'Dove Soap', 'Pampers'] as string[],
   orders: [] as StoredOrder[],
   categories: [...CATEGORIES] as Category[],
   products: [...PRODUCTS] as Product[],
+  addresses: [
+    {
+      id: 'addr-1',
+      title: 'Home',
+      type: 'home',
+      name: 'Ravalika (Home)',
+      flat: 'Flat 402, Tower B',
+      street: 'Green Valley Apts, Silicon Boulevard',
+      address: 'Flat 402, Green Valley Apts, Silicon Boulevard',
+      pincode: '560100',
+      city: 'Bengaluru',
+      phone: '+91 98765 43210',
+      isDefault: true,
+    },
+    {
+      id: 'addr-2',
+      title: 'Office',
+      type: 'office',
+      name: 'Ravalika (Office)',
+      flat: 'Floor 7, Wing A',
+      street: 'TechHub Tower, Innovation Way, Electronic City',
+      address: 'Floor 7, TechHub Tower, Innovation Way',
+      pincode: '560001',
+      city: 'Bengaluru',
+      phone: '+91 98765 43210',
+      isDefault: false,
+    },
+    {
+      id: 'addr-3',
+      title: 'Studio',
+      type: 'other',
+      name: 'Studio',
+      flat: 'Loft 14',
+      street: 'Arts District, Maple Street',
+      address: 'Loft 14, Arts District, Maple Street',
+      pincode: '560034',
+      city: 'Bengaluru',
+      phone: '+91 98765 43210',
+      isDefault: false,
+    },
+  ] as DeliveryAddress[],
+  deliveryZones: [
+    {
+      id: 'zone-1',
+      name: 'Electronic City Express Hub',
+      description: 'Covers South Bangalore tech corridor and peripheral express hubs',
+      pincode: '560100',
+      pincodes: ['560100', '560102', '560103', '560068'],
+      area: 'Electronic City',
+      city: 'Bengaluru',
+      isServiceable: true,
+      deliveryTimeMins: 10,
+      estimatedMinutes: 10,
+      deliveryFee: 25,
+      minOrderAmount: 99,
+      freeDeliveryThreshold: 299,
+    },
+    {
+      id: 'zone-2',
+      name: 'Bangalore Central Express Zone',
+      description: 'Covers MG Road, CBD, Shivaji Nagar, and Central Business District',
+      pincode: '560001',
+      pincodes: ['560001', '560002', '560025', '560020'],
+      area: 'MG Road / Central',
+      city: 'Bengaluru',
+      isServiceable: true,
+      deliveryTimeMins: 12,
+      estimatedMinutes: 12,
+      deliveryFee: 25,
+      minOrderAmount: 99,
+      freeDeliveryThreshold: 299,
+    },
+    {
+      id: 'zone-3',
+      name: 'Koramangala & Indiranagar Hub',
+      description: 'Covers Koramangala 1st to 8th block, Domlur and HAL areas',
+      pincode: '560034',
+      pincodes: ['560034', '560095', '560008', '560038'],
+      area: 'Koramangala',
+      city: 'Bengaluru',
+      isServiceable: true,
+      deliveryTimeMins: 10,
+      estimatedMinutes: 10,
+      deliveryFee: 20,
+      minOrderAmount: 99,
+      freeDeliveryThreshold: 299,
+    },
+    {
+      id: 'zone-4',
+      name: 'North Suburban Express Hub',
+      description: 'Covers Yelahanka, Hebbal, Sahakar Nagar and Airport Corridor',
+      pincode: '560064',
+      pincodes: ['560064', '560092', '560024'],
+      area: 'Yelahanka / Hebbal',
+      city: 'Bengaluru',
+      isServiceable: true,
+      deliveryTimeMins: 15,
+      estimatedMinutes: 15,
+      deliveryFee: 30,
+      minOrderAmount: 99,
+      freeDeliveryThreshold: 399,
+    },
+  ] as DeliveryZone[],
+  inventoryLogs: [] as { timestamp: string; productId: string; variantId?: string; change: number; remainingStock: number; reason: string }[],
 };
 
 /**
@@ -446,10 +551,11 @@ export const getSnackSubcategoriesDB = async (): Promise<string[]> => {
 };
 
 /**
- * Maps a Phase 1 category ID to its corresponding legacy aliases and product tags
+ * Maps any of the 28 category IDs to its corresponding legacy aliases and product tags
  */
 export const mapCategoryToLegacy = (cat: string): string[] => {
   switch (cat) {
+    // Phase 1 (1-13)
     case 'fruits-vegetables':
       return ['fruits-vegetables', 'fruits', 'vegetables'];
     case 'dairy-bread-eggs':
@@ -476,6 +582,46 @@ export const mapCategoryToLegacy = (cat: string): string[] => {
       return ['meat-seafood-eggs'];
     case 'masala-spices':
       return ['masala-spices'];
+
+    // Phase 2: Everyday Essentials (14-21)
+    case 'personal-care':
+      return ['personal-care'];
+    case 'beauty-cosmetics':
+      return ['beauty-cosmetics'];
+    case 'home-care':
+      return ['home-care', 'household'];
+    case 'baby-care':
+      return ['baby-care'];
+    case 'pet-care':
+    case 'pet-supplies':
+      return ['pet-care', 'pet-supplies'];
+    case 'kitchen-dining':
+    case 'kitchen-home':
+      return ['kitchen-dining', 'kitchen-home'];
+    case 'home-living':
+      return ['home-living', 'household'];
+    case 'stationery-office':
+    case 'stationery':
+      return ['stationery-office', 'stationery'];
+
+    // Phase 3: Lifestyle Marketplace (22-28)
+    case 'electronics-accessories':
+      return ['electronics-accessories'];
+    case 'fashion-accessories':
+    case 'clothing':
+      return ['fashion-accessories', 'clothing'];
+    case 'jewellery-accessories':
+    case 'accessories':
+      return ['jewellery-accessories', 'accessories'];
+    case 'health-wellness':
+      return ['health-wellness'];
+    case 'toys-games':
+      return ['toys-games'];
+    case 'pooja-essentials':
+      return ['pooja-essentials'];
+    case 'books-gifts':
+      return ['books-gifts'];
+
     default:
       return [cat];
   }
@@ -697,4 +843,342 @@ export const getSearchSuggestionsDB = async (
     if (suggestions.size >= limit) break;
   }
   return Array.from(suggestions).slice(0, limit);
+};
+
+// ==========================================
+// CENTRALIZED INVENTORY MANAGEMENT (PHASE 4)
+// ==========================================
+
+export const getOutOfStockProductsDB = async (): Promise<Product[]> => {
+  return memoryStore.products.filter((p) => !p.inStock || p.stockCount === 0);
+};
+
+export const updateVariantInventoryDB = async (
+  productId: string,
+  variantSizeOrId: string,
+  newStock: number
+): Promise<{ success: boolean; product?: Product }> => {
+  const prod = memoryStore.products.find((p) => p.id === productId);
+  if (!prod) return { success: false };
+
+  if (prod.variants) {
+    const v = prod.variants.find((item) => item.id === variantSizeOrId || item.size === variantSizeOrId);
+    if (v) {
+      v.stockCount = newStock;
+      v.inStock = newStock > 0;
+    }
+  }
+
+  // Update total stock count
+  const totalStock = prod.variants && prod.variants.length > 0
+    ? prod.variants.reduce((sum, item) => sum + (item.stockCount || 0), 0)
+    : newStock;
+
+  prod.stockCount = totalStock;
+  prod.inStock = totalStock > 0;
+  prod.updatedAt = new Date().toISOString();
+
+  memoryStore.inventoryLogs.unshift({
+    timestamp: new Date().toISOString(),
+    productId,
+    variantId: variantSizeOrId,
+    change: newStock,
+    remainingStock: totalStock,
+    reason: 'Manual Admin Adjustment',
+  });
+
+  return { success: true, product: { ...prod } };
+};
+
+export const reserveOrderStockDB = async (
+  items: { productId: string; quantity: number; variantId?: string; variantSize?: string }[]
+): Promise<{ success: boolean; message: string }> => {
+  // First verify availability for all items
+  for (const item of items) {
+    const prod = memoryStore.products.find((p) => p.id === item.productId);
+    if (!prod || !prod.inStock || prod.stockCount < item.quantity) {
+      return { success: false, message: `Product ${prod?.name || 'Item'} is currently out of stock.` };
+    }
+  }
+
+  // Deduct inventory safely
+  for (const item of items) {
+    const prod = memoryStore.products.find((p) => p.id === item.productId);
+    if (prod) {
+      prod.stockCount = Math.max(0, prod.stockCount - item.quantity);
+      if (prod.stockCount === 0) prod.inStock = false;
+      prod.updatedAt = new Date().toISOString();
+
+      memoryStore.inventoryLogs.unshift({
+        timestamp: new Date().toISOString(),
+        productId: item.productId,
+        change: -item.quantity,
+        remainingStock: prod.stockCount,
+        reason: 'Order Checkout Reservation',
+      });
+    }
+  }
+  return { success: true, message: 'Stock reserved successfully' };
+};
+
+export const releaseOrderStockDB = async (
+  items: { productId: string; quantity: number; variantId?: string }[]
+): Promise<void> => {
+  for (const item of items) {
+    const prod = memoryStore.products.find((p) => p.id === item.productId);
+    if (prod) {
+      prod.stockCount += item.quantity;
+      prod.inStock = true;
+      prod.updatedAt = new Date().toISOString();
+
+      memoryStore.inventoryLogs.unshift({
+        timestamp: new Date().toISOString(),
+        productId: item.productId,
+        change: item.quantity,
+        remainingStock: prod.stockCount,
+        reason: 'Order Cancellation Restock',
+      });
+    }
+  }
+};
+
+export const getInventoryReportDB = async () => {
+  const totalItems = memoryStore.products.length;
+  const inStockItems = memoryStore.products.filter((p) => p.inStock && p.stockCount > 0).length;
+  const lowStockItems = memoryStore.products.filter((p) => p.stockCount <= 10 && p.stockCount > 0).length;
+  const outOfStockItems = memoryStore.products.filter((p) => !p.inStock || p.stockCount === 0).length;
+
+  return {
+    total: totalItems,
+    inStock: inStockItems,
+    lowStock: lowStockItems,
+    outOfStock: outOfStockItems,
+    totalItems,
+    inStockItems,
+    lowStockItems,
+    outOfStockItems,
+    recentLogs: memoryStore.inventoryLogs.slice(0, 25),
+  };
+};
+
+// ==========================================
+// DELIVERY LOCATION MANAGEMENT (PHASE 4)
+// ==========================================
+
+export const getDeliveryAddressesDB = async (): Promise<DeliveryAddress[]> => {
+  return [...memoryStore.addresses];
+};
+
+export const addDeliveryAddressDB = async (
+  address: Partial<DeliveryAddress>
+): Promise<DeliveryAddress> => {
+  const flatStr = address.flat || '';
+  const streetStr = address.street || '';
+  const cityStr = address.city || 'Bengaluru';
+  const pinStr = address.pincode || '560001';
+  const genAddr = address.address || [flatStr, streetStr, cityStr].filter(Boolean).join(', ') + ` - ${pinStr}`;
+  const newAddr: DeliveryAddress = {
+    id: address.id || String(Date.now()),
+    title: address.title || address.name || 'Home',
+    address: genAddr,
+    pincode: pinStr,
+    city: cityStr,
+    type: address.type || 'home',
+    name: address.name || address.title || 'Home',
+    flat: flatStr,
+    street: streetStr,
+    phone: address.phone || '+91 98765 43210',
+    isDefault: !!address.isDefault,
+  };
+  if (newAddr.isDefault) {
+    memoryStore.addresses.forEach((a) => (a.isDefault = false));
+  }
+  memoryStore.addresses.push(newAddr);
+  return newAddr;
+};
+
+export const updateDeliveryAddressDB = async (
+  idOrAddress: string | DeliveryAddress,
+  updates?: Partial<DeliveryAddress>
+): Promise<boolean> => {
+  const id = typeof idOrAddress === 'string' ? idOrAddress : idOrAddress.id;
+  const data = typeof idOrAddress === 'string' ? (updates || {}) : idOrAddress;
+  const idx = memoryStore.addresses.findIndex((a) => a.id === id);
+  if (idx === -1) return false;
+
+  if (data.isDefault) {
+    memoryStore.addresses.forEach((a) => (a.isDefault = false));
+  }
+  memoryStore.addresses[idx] = { ...memoryStore.addresses[idx], ...data };
+  return true;
+};
+
+export const deleteDeliveryAddressDB = async (
+  id: string
+): Promise<boolean> => {
+  const prevLen = memoryStore.addresses.length;
+  memoryStore.addresses = memoryStore.addresses.filter((a) => a.id !== id);
+  return memoryStore.addresses.length < prevLen;
+};
+
+export const getDeliveryZonesDB = async (): Promise<DeliveryZone[]> => {
+  return [...memoryStore.deliveryZones];
+};
+
+export const addOrUpdateDeliveryZoneDB = async (
+  zone: DeliveryZone
+): Promise<{ success: boolean; zones: DeliveryZone[] }> => {
+  const existing = memoryStore.deliveryZones.findIndex((z) => z.pincode === zone.pincode);
+  if (existing >= 0) {
+    memoryStore.deliveryZones[existing] = { ...zone };
+  } else {
+    memoryStore.deliveryZones.push({ ...zone });
+  }
+  return { success: true, zones: [...memoryStore.deliveryZones] };
+};
+
+export const checkServiceabilityDB = async (
+  pincode: string
+): Promise<{
+  isServiceable: boolean;
+  serviceable: boolean;
+  zone?: DeliveryZone;
+  message: string;
+}> => {
+  const cleanPincode = pincode.trim();
+  const zone = memoryStore.deliveryZones.find(
+    (z) => z.pincode === cleanPincode || z.pincodes?.includes(cleanPincode)
+  );
+
+  if (zone && zone.isServiceable) {
+    return {
+      isServiceable: true,
+      serviceable: true,
+      zone,
+      message: `Lightning fast delivery to ${zone.area}, ${zone.city} in ${zone.deliveryTimeMins || zone.estimatedMinutes || 10} mins!`,
+    };
+  }
+
+  return {
+    isServiceable: false,
+    serviceable: false,
+    message: `Delivery is currently expanding to PIN ${cleanPincode}. Select another location or pincode.`,
+  };
+};
+
+// ==========================================
+// ADVANCED SEARCH & RECENT SEARCHES (PHASE 4)
+// ==========================================
+
+export const getRecentSearchesDB = async (): Promise<string[]> => {
+  return [...memoryStore.recentSearches];
+};
+
+export const addRecentSearchDB = async (query: string): Promise<string[]> => {
+  const clean = query.trim();
+  if (!clean) return [...memoryStore.recentSearches];
+
+  const idx = memoryStore.recentSearches.indexOf(clean);
+  if (idx > -1) {
+    memoryStore.recentSearches.splice(idx, 1);
+  }
+  memoryStore.recentSearches.unshift(clean);
+  if (memoryStore.recentSearches.length > 10) {
+    memoryStore.recentSearches.pop();
+  }
+  return [...memoryStore.recentSearches];
+};
+
+export const clearRecentSearchesDB = async (): Promise<void> => {
+  memoryStore.recentSearches = [];
+};
+
+export const getPopularSearchesDB = async (): Promise<string[]> => {
+  return [
+    'Atta & Flours',
+    'Farm Fresh Milk',
+    'boAt TWS Earbuds',
+    'Maggi 2-Minute',
+    'Dove Body Wash',
+    'Yoga Mat',
+    'Pampers Diapers',
+    'Ferrero Rocher',
+  ];
+};
+
+export const searchProductsAdvancedDB = async (options: {
+  query?: string;
+  category?: string;
+  subcategory?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  inStockOnly?: boolean;
+  brand?: string;
+  sortBy?: 'popularity' | 'price-asc' | 'price-desc' | 'rating' | 'newest';
+}): Promise<Product[]> => {
+  let results = [...memoryStore.products];
+
+  if (options.category && options.category !== 'all') {
+    const targetCats = mapCategoryToLegacy(options.category);
+    results = results.filter((p) => targetCats.includes(p.category));
+  }
+
+  if (options.subcategory && options.subcategory !== 'All') {
+    results = results.filter(
+      (p) => p.subcategory.toLowerCase() === options.subcategory!.toLowerCase()
+    );
+  }
+
+  if (options.query && options.query.trim().length > 0) {
+    const q = options.query.toLowerCase().trim();
+    results = results.filter((p) => {
+      const matchName = p.name.toLowerCase().includes(q);
+      const matchBrand = p.brand && p.brand.toLowerCase().includes(q);
+      const matchSub = p.subcategory.toLowerCase().includes(q);
+      const matchDesc = p.description.toLowerCase().includes(q);
+      const matchTags = p.tags?.some((t) => t.toLowerCase().includes(q));
+      const matchAttrs = p.attributes?.some((a) => a.value.toLowerCase().includes(q));
+      return matchName || matchBrand || matchSub || matchDesc || matchTags || matchAttrs;
+    });
+  }
+
+  if (options.brand && options.brand !== 'All Brands') {
+    results = results.filter(
+      (p) => p.brand && p.brand.toLowerCase() === options.brand!.toLowerCase()
+    );
+  }
+
+  if (options.minPrice !== undefined) {
+    results = results.filter((p) => p.price >= options.minPrice!);
+  }
+
+  if (options.maxPrice !== undefined) {
+    results = results.filter((p) => p.price <= options.maxPrice!);
+  }
+
+  if (options.inStockOnly) {
+    results = results.filter((p) => p.inStock && p.stockCount > 0);
+  }
+
+  // Sorting
+  switch (options.sortBy) {
+    case 'price-asc':
+      results.sort((a, b) => a.price - b.price);
+      break;
+    case 'price-desc':
+      results.sort((a, b) => b.price - a.price);
+      break;
+    case 'rating':
+      results.sort((a, b) => b.rating - a.rating);
+      break;
+    case 'newest':
+      results.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      break;
+    case 'popularity':
+    default:
+      results.sort((a, b) => b.reviewsCount - a.reviewsCount);
+      break;
+  }
+
+  return results;
 };

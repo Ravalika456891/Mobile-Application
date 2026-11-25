@@ -143,9 +143,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {product.name}
         </Text>
 
-        {/* Weight or Size & Sugar Label */}
+        {/* Weight or Size & Sugar Label & Variant Count */}
         <View style={styles.specRow}>
           <Text style={styles.weightText}>{product.weightOrSize}</Text>
+          {product.variants && product.variants.length > 0 && (
+            <View style={styles.variantBadge}>
+              <Text style={styles.variantBadgeText}>{product.variants.length} options</Text>
+            </View>
+          )}
+          {product.warranty && (
+            <View style={styles.warrantyBadge}>
+              <Text style={styles.warrantyBadgeText}>{product.warranty}</Text>
+            </View>
+          )}
           {product.sugarLabel && (
             <View
               style={[
@@ -365,6 +375,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#64748B',
     marginBottom: 4,
+  },
+  variantBadge: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    marginLeft: 4,
+    marginBottom: 4,
+  },
+  variantBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  warrantyBadge: {
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    marginLeft: 4,
+    marginBottom: 4,
+  },
+  warrantyBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    color: '#047857',
   },
   ratingRow: {
     flexDirection: 'row',

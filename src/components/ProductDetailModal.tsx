@@ -8,9 +8,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  TextInput,
 } from 'react-native';
 import { Icon } from './Icon';
 import { useApp } from '../context/AppContext';
+import { ProductVariant } from '../types';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80';
@@ -24,27 +26,72 @@ export const ProductDetailModal: React.FC = () => {
     getItemQuantity,
     toggleWishlist,
     isInWishlist,
+    selectedDeliveryAddress,
+    checkPincodeServiceability,
+    showToast,
   } = useApp();
 
   const [imgError, setImgError] = useState(false);
   const [selectedVolume, setSelectedVolume] = useState<string | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+
+  // Pincode serviceability checker
+  const [pincodeInput, setPincodeInput] = useState('');
+  const [pincodeCheckResult, setPincodeCheckResult] = useState<{
+    serviceable: boolean;
+    message: string;
+    checked: boolean;
+  }>({ serviceable: false, message: '', checked: false });
 
   useEffect(() => {
     setImgError(false);
     setSelectedVolume(null);
-  }, [selectedProduct?.id]);
+    setSelectedVariant(null);
+    setPincodeCheckResult({ serviceable: false, message: '', checked: false });
+    if (selectedDeliveryAddress?.pincode) {
+      setPincodeInput(selectedDeliveryAddress.pincode);
+    }
+    if (selectedProduct?.variants && selectedProduct.variants.length > 0) {
+      setSelectedVariant(selectedProduct.variants[0]);
+    }
+  }, [selectedProduct?.id, selectedDeliveryAddress?.pincode]);
 
   if (!selectedProduct) return null;
+
+  const handleCheckPincode = async () => {
+    if (!pincodeInput.trim() || pincodeInput.trim().length < 6) {
+      showToast('Enter a valid 6-digit PIN code');
+      return;
+    }
+    const res = await checkPincodeServiceability(pincodeInput.trim());
+    setPincodeCheckResult({
+      serviceable: res.serviceable,
+      message: res.message,
+      checked: true,
+    });
+  };
 
   const activeOption = selectedProduct.volumeOptions?.find(
     (opt) => opt.size === (selectedVolume || selectedProduct.weightOrSize)
   );
 
-  const displayPrice = activeOption ? activeOption.price : selectedProduct.price;
-  const displayOriginalPrice = activeOption
-    ? (activeOption.originalPrice || selectedProduct.originalPrice)
+  const displayPrice = selectedVariant
+    ? selectedVariant.price
+    : activeOption
+    ? activeOption.price
+    : selectedProduct.price;
+
+  const displayOriginalPrice = selectedVariant
+    ? selectedVariant.originalPrice || selectedProduct.originalPrice
+    : activeOption
+    ? activeOption.originalPrice || selectedProduct.originalPrice
     : selectedProduct.originalPrice;
-  const displayWeightOrSize = activeOption ? activeOption.size : selectedProduct.weightOrSize;
+
+  const displayWeightOrSize = selectedVariant
+    ? selectedVariant.name || selectedVariant.size || selectedVariant.shade || selectedVariant.color || 'Option'
+    : activeOption
+    ? activeOption.size
+    : selectedProduct.weightOrSize;
 
   const currentProductToAdd = activeOption
     ? {
@@ -332,9 +379,206 @@ export const ProductDetailModal: React.FC = () => {
               </View>
             )}
 
+            {/* Generic Product Variants Selector (Shade, Size, Model, Color, Storage) */}
+            {selectedProduct.variants && selectedProduct.variants.length > 0 && (
+              <View style={styles.volumeContainer}>
+                <View style={styles.volumeTitleRow}>
+                  <Icon name="options-outline" size={15} color="#059669" />
+                  <Text style={styles.volumeTitle}>
+                    Select Option / Variant ({selectedProduct.variants.length} available)
+                  </Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.volumeList}
+                >
+                  {selectedProduct.variants.map((v) => {
+                    const isSelected = selectedVariant?.id === v.id;
+                    return (
+                      <TouchableOpacity
+                        key={v.id}
+                        style={[
+                          styles.volumeCard,
+                          isSelected && styles.variantCardActive,
+                          !v.inStock && styles.variantCardDisabled,
+                        ]}
+                        onPress={() => setSelectedVariant(v)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          {v.colorCode && (
+                            <View
+                              style={[
+                                styles.variantColorDot,
+                                { backgroundColor: v.colorCode },
+                              ]}
+                            />
+                          )}
+                          <Text
+                            style={[
+                              styles.volumeCardSize,
+                              isSelected && styles.volumeCardSizeActive,
+                            ]}
+                          >
+                            {v.name || v.size || v.shade || v.color || 'Option'}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.volumeCardPrice,
+                            isSelected && styles.volumeCardPriceActive,
+                          ]}
+                        >
+                          ₹{v.price}
+                        </Text>
+                        {(v.stock ?? v.stockCount ?? 10) <= 5 && (v.stock ?? v.stockCount ?? 10) > 0 && (
+                          <Text style={styles.variantLowStockText}>Only {v.stock ?? v.stockCount} left</Text>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Lifestyle & Key Category Specifications Card */}
+            {(selectedProduct.brand ||
+              selectedProduct.skinType ||
+              selectedProduct.warranty ||
+              selectedProduct.ageGroup ||
+              selectedProduct.author ||
+              selectedProduct.material ||
+              selectedProduct.gender ||
+              selectedProduct.storageCapacity) && (
+              <View style={styles.lifestyleCard}>
+                <View style={styles.lifestyleHeader}>
+                  <Icon name="ribbon-outline" size={16} color="#059669" />
+                  <Text style={styles.lifestyleTitle}>Product Highlights & Specifications</Text>
+                </View>
+                <View style={styles.highlightPillsWrap}>
+                  {selectedProduct.brand && (
+                    <View style={styles.highlightPill}>
+                      <Text style={styles.highlightPillLabel}>Brand:</Text>
+                      <Text style={styles.highlightPillVal}>{selectedProduct.brand}</Text>
+                    </View>
+                  )}
+                  {selectedProduct.warranty && (
+                    <View style={[styles.highlightPill, styles.highlightPillGreen]}>
+                      <Icon name="shield-checkmark" size={11} color="#059669" />
+                      <Text style={styles.highlightPillVal}>{selectedProduct.warranty} Warranty</Text>
+                    </View>
+                  )}
+                  {selectedProduct.skinType && (
+                    <View style={styles.highlightPill}>
+                      <Text style={styles.highlightPillLabel}>Skin Type:</Text>
+                      <Text style={styles.highlightPillVal}>{selectedProduct.skinType}</Text>
+                    </View>
+                  )}
+                  {selectedProduct.ageGroup && (
+                    <View style={styles.highlightPill}>
+                      <Text style={styles.highlightPillLabel}>Age Group:</Text>
+                      <Text style={styles.highlightPillVal}>{selectedProduct.ageGroup}</Text>
+                    </View>
+                  )}
+                  {selectedProduct.material && (
+                    <View style={styles.highlightPill}>
+                      <Text style={styles.highlightPillLabel}>Material:</Text>
+                      <Text style={styles.highlightPillVal}>{selectedProduct.material}</Text>
+                    </View>
+                  )}
+                  {selectedProduct.author && (
+                    <View style={styles.highlightPill}>
+                      <Text style={styles.highlightPillLabel}>Author:</Text>
+                      <Text style={styles.highlightPillVal}>{selectedProduct.author}</Text>
+                    </View>
+                  )}
+                  {selectedProduct.storageCapacity && (
+                    <View style={styles.highlightPill}>
+                      <Text style={styles.highlightPillLabel}>Capacity:</Text>
+                      <Text style={styles.highlightPillVal}>{selectedProduct.storageCapacity}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {/* Delivery Location & Pincode Checker */}
+            <View style={styles.pincodeBox}>
+              <View style={styles.pincodeHeader}>
+                <Icon name="location-outline" size={16} color="#059669" />
+                <Text style={styles.pincodeTitle}>Delivery Check & ETA</Text>
+              </View>
+              <View style={styles.pincodeRow}>
+                <TextInput
+                  style={styles.pincodeInput}
+                  placeholder="Enter 6-digit Pincode"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+                  maxLength={6}
+                  value={pincodeInput}
+                  onChangeText={(t) => {
+                    setPincodeInput(t);
+                    if (pincodeCheckResult.checked) {
+                      setPincodeCheckResult({ serviceable: false, message: '', checked: false });
+                    }
+                  }}
+                />
+                <TouchableOpacity
+                  style={styles.pincodeCheckBtn}
+                  onPress={handleCheckPincode}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.pincodeCheckBtnText}>Check</Text>
+                </TouchableOpacity>
+              </View>
+              {pincodeCheckResult.checked && (
+                <View
+                  style={[
+                    styles.pincodeResultBox,
+                    pincodeCheckResult.serviceable
+                      ? styles.pincodeResultSuccess
+                      : styles.pincodeResultError,
+                  ]}
+                >
+                  <Icon
+                    name={pincodeCheckResult.serviceable ? 'checkmark-circle' : 'alert-circle'}
+                    size={15}
+                    color={pincodeCheckResult.serviceable ? '#059669' : '#DC2626'}
+                  />
+                  <Text
+                    style={[
+                      styles.pincodeResultText,
+                      { color: pincodeCheckResult.serviceable ? '#065F46' : '#991B1B' },
+                    ]}
+                  >
+                    {pincodeCheckResult.message}
+                  </Text>
+                </View>
+              )}
+            </View>
+
             {/* Product Overview / Description */}
             <Text style={styles.sectionHeading}>Product Overview</Text>
             <Text style={styles.descriptionText}>{selectedProduct.description}</Text>
+
+            {/* Dynamic Attributes Table (Polymorphic Specifications) */}
+            {selectedProduct.attributes && selectedProduct.attributes.length > 0 && (
+              <View style={styles.specCard}>
+                <View style={styles.specCardHeader}>
+                  <Icon name="list-outline" size={16} color="#059669" />
+                  <Text style={styles.specCardTitle}>Key Specifications</Text>
+                </View>
+                <View style={styles.nutritionTable}>
+                  {selectedProduct.attributes.map((attr, idx) => (
+                    <View key={idx} style={styles.nutritionRow}>
+                      <Text style={styles.nutritionColKey}>{attr.name}</Text>
+                      <Text style={styles.nutritionColVal}>{attr.value}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
 
             {/* Ingredients Section */}
             {selectedProduct.ingredients && (
@@ -523,7 +767,7 @@ export const ProductDetailModal: React.FC = () => {
             {quantity === 0 ? (
               <TouchableOpacity
                 style={styles.addCartBtn}
-                onPress={() => addToCart(currentProductToAdd)}
+                onPress={() => addToCart(currentProductToAdd, selectedVariant || undefined)}
                 activeOpacity={0.85}
               >
                 <Icon name="cart" size={17} color="#FFF" />
@@ -533,14 +777,14 @@ export const ProductDetailModal: React.FC = () => {
               <View style={styles.counterBar}>
                 <TouchableOpacity
                   style={styles.counterBtn}
-                  onPress={() => removeFromCart(selectedProduct.id)}
+                  onPress={() => removeFromCart(selectedProduct.id, selectedVariant?.id)}
                 >
                   <Icon name="remove" size={17} color="#FFF" />
                 </TouchableOpacity>
                 <Text style={styles.counterQty}>{quantity}</Text>
                 <TouchableOpacity
                   style={styles.counterBtn}
-                  onPress={() => addToCart(currentProductToAdd)}
+                  onPress={() => addToCart(currentProductToAdd, selectedVariant || undefined)}
                 >
                   <Icon name="add" size={17} color="#FFF" />
                 </TouchableOpacity>
@@ -1134,5 +1378,139 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     minWidth: 20,
     textAlign: 'center',
+  },
+  variantCardActive: {
+    borderColor: '#059669',
+    backgroundColor: '#ECFDF5',
+  },
+  variantCardDisabled: {
+    opacity: 0.5,
+  },
+  variantColorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  variantLowStockText: {
+    fontSize: 10,
+    color: '#DC2626',
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  lifestyleCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  lifestyleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  lifestyleTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  highlightPillsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  highlightPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  highlightPillGreen: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+  },
+  highlightPillLabel: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  highlightPillVal: {
+    fontSize: 11,
+    color: '#0F172A',
+    fontWeight: '700',
+  },
+  pincodeBox: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  pincodeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  pincodeTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  pincodeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  pincodeInput: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 6,
+    fontSize: 13,
+    color: '#1F2937',
+  },
+  pincodeCheckBtn: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  pincodeCheckBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  pincodeResultBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    padding: 8,
+    borderRadius: 8,
+  },
+  pincodeResultSuccess: {
+    backgroundColor: '#DCFCE7',
+  },
+  pincodeResultError: {
+    backgroundColor: '#FEE2E2',
+  },
+  pincodeResultText: {
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
   },
 });

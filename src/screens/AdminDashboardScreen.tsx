@@ -36,13 +36,20 @@ export const AdminDashboardScreen: React.FC = () => {
     logout,
     currentUser,
     showToast,
+    deliveryZones,
+    checkPincodeServiceability,
+    inventoryReport,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'kpi' | 'categories' | 'products' | 'orders' | 'users'>('kpi');
+  const [activeTab, setActiveTab] = useState<'kpi' | 'categories' | 'products' | 'orders' | 'zones' | 'users'>('kpi');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [stockOnlyFilter, setStockOnlyFilter] = useState<boolean>(false);
   const [lowStockFilter, setLowStockFilter] = useState<boolean>(false);
+
+  // Delivery Zone test state
+  const [testPincode, setTestPincode] = useState('');
+  const [testPincodeResult, setTestPincodeResult] = useState<string | null>(null);
 
   // Category Management States
   const [addCatModalVisible, setAddCatModalVisible] = useState(false);
@@ -427,6 +434,16 @@ export const AdminDashboardScreen: React.FC = () => {
           <Icon name="bicycle" size={15} color={activeTab === 'orders' ? '#059669' : '#6B7280'} />
           <Text style={[styles.tabNavText, activeTab === 'orders' && styles.tabNavTextActive]}>
             Orders ({ordersList.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tabNavBtn, activeTab === 'zones' && styles.tabNavBtnActive]}
+          onPress={() => setActiveTab('zones')}
+        >
+          <Icon name="location-outline" size={15} color={activeTab === 'zones' ? '#059669' : '#6B7280'} />
+          <Text style={[styles.tabNavText, activeTab === 'zones' && styles.tabNavTextActive]}>
+            Delivery Zones
           </Text>
         </TouchableOpacity>
 
@@ -997,6 +1014,100 @@ export const AdminDashboardScreen: React.FC = () => {
               </View>
             ))
           )}
+        </ScrollView>
+      )}
+
+      {/* TAB: DELIVERY ZONES & PINCODES */}
+      {activeTab === 'zones' && (
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          <Text style={styles.cardHeaderTitle}>📍 Serviceable Delivery Zones ({deliveryZones.length})</Text>
+
+          {/* Live Pincode Serviceability Tester */}
+          <View style={styles.testerCard}>
+            <Text style={styles.testerTitle}>🔍 Test PIN Code Serviceability & Routing</Text>
+            <Text style={styles.testerSubtitle}>
+              Check real-time fulfillment route, SLA and estimated delivery time for any Indian PIN code
+            </Text>
+            <View style={styles.testerInputRow}>
+              <TextInput
+                style={styles.testerInput}
+                placeholder="Enter 6-digit PIN Code (e.g. 560001, 560100)"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="numeric"
+                maxLength={6}
+                value={testPincode}
+                onChangeText={(t) => {
+                  setTestPincode(t);
+                  setTestPincodeResult(null);
+                }}
+              />
+              <TouchableOpacity
+                style={styles.testerBtn}
+                onPress={async () => {
+                  if (!testPincode.trim() || testPincode.trim().length < 6) {
+                    Alert.alert('Invalid PIN', 'Enter a 6-digit PIN code.');
+                    return;
+                  }
+                  const res = await checkPincodeServiceability(testPincode.trim());
+                  setTestPincodeResult(res.message);
+                }}
+              >
+                <Text style={styles.testerBtnText}>Verify</Text>
+              </TouchableOpacity>
+            </View>
+            {testPincodeResult && (
+              <View style={styles.testerResultBox}>
+                <Icon name="information-circle" size={16} color="#059669" />
+                <Text style={styles.testerResultText}>{testPincodeResult}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Zones List */}
+          {deliveryZones.map((z, idx) => {
+            const pinList = z.pincodes && z.pincodes.length > 0 ? z.pincodes : [z.pincode];
+            return (
+              <View key={z.id || z.pincode || idx} style={styles.zoneCard}>
+                <View style={styles.zoneHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.zoneName}>{z.name || `${z.area} Zone`}</Text>
+                    <Text style={styles.zoneDesc}>{z.description || `${z.city} fulfillment corridor`}</Text>
+                  </View>
+                  <View style={styles.zoneActiveBadge}>
+                    <Text style={styles.zoneActiveBadgeText}>Active 🟢</Text>
+                  </View>
+                </View>
+
+                <View style={styles.zoneMetaRow}>
+                  <View style={styles.zoneMetaItem}>
+                    <Icon name="flash" size={13} color="#059669" />
+                    <Text style={styles.zoneMetaLabel}>SLA: {z.estimatedMinutes || z.deliveryTimeMins || 10} Mins</Text>
+                  </View>
+                  <View style={styles.zoneMetaItem}>
+                    <Icon name="cash-outline" size={13} color="#2563EB" />
+                    <Text style={styles.zoneMetaLabel}>Base Fee: ₹{z.deliveryFee || 25}</Text>
+                  </View>
+                  <View style={styles.zoneMetaItem}>
+                    <Icon name="cube-outline" size={13} color="#7C3AED" />
+                    <Text style={styles.zoneMetaLabel}>Min: ₹{z.minOrderAmount || 99}</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.pincodesSectionTitle}>
+                  Serviceable PIN Codes ({pinList.length}):
+                </Text>
+                <View style={styles.pincodesWrap}>
+                  {pinList.map((pin: string) => (
+                    <View key={pin} style={styles.pincodeTag}>
+                      <Text style={styles.pincodeTagText}>{pin}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            );
+          })}
+
+          <View style={{ height: 40 }} />
         </ScrollView>
       )}
 
@@ -2152,5 +2263,148 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#059669',
+  },
+  testerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  testerTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  testerSubtitle: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  testerInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  testerInput: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+    fontSize: 13,
+    color: '#0F172A',
+  },
+  testerBtn: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  testerBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  testerResultBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    backgroundColor: '#ECFDF5',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  testerResultText: {
+    fontSize: 12,
+    color: '#065F46',
+    fontWeight: '600',
+    flex: 1,
+  },
+  zoneCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  zoneHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  zoneName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  zoneDesc: {
+    fontSize: 11.5,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  zoneActiveBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  zoneActiveBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  zoneMetaRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#F1F5F9',
+    marginVertical: 8,
+  },
+  zoneMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  zoneMetaLabel: {
+    fontSize: 11,
+    color: '#334155',
+    fontWeight: '600',
+  },
+  pincodesSectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    marginTop: 4,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  pincodesWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  pincodeTag: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  pincodeTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F172A',
   },
 });

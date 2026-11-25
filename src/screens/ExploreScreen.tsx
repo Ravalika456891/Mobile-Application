@@ -42,9 +42,9 @@ export const ExploreScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>All Shopping Categories</Text>
+        <Text style={styles.headerTitle}>All {displayCategories.length} Departments</Text>
         <Text style={styles.headerSubtitle}>
-          Select a category to shop fresh items, daily essentials and groceries delivered in 10 minutes
+          Select a category to shop fresh food, daily essentials, beauty, electronics & lifestyle products delivered in 10 minutes
         </Text>
       </View>
 
