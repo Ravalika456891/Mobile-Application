@@ -2479,4 +2479,5 @@ export * from './FruitProduct';
 export { fruits, popularFruits, searchFruits } from './quickmart_fruits';
 export { VEGETABLES, popularVegetables, VEGETABLE_SUBCATEGORIES };
 export { GRAINS_STAPLES_PRODUCTS };
+export { SPICES_MASALA_PRODUCTS } from './spicesProducts';
 export type { VegetableSubcategory };

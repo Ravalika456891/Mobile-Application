@@ -1,4 +1,4 @@
-export type CategoryId = 
+export type CategoryId =
   | 'all'
   // Phase 1: Core Grocery (1-13)
   | 'fruits-vegetables'
@@ -65,16 +65,18 @@ export interface Category {
 export interface NutritionInfo {
   servingSize?: string;
   energy?: string;
-  carbohydrates?: string;
-  sugars?: string;
-  addedSugar?: string;
-  protein?: string;
-  fat?: string;
-  sodium?: string;
-  potassium?: string;
-  calcium?: string;
-  vitaminC?: string;
-  vitaminD?: string;
+  calories?: number | string;
+  carbohydrates?: string | number;
+  sugars?: string | number;
+  addedSugar?: string | number;
+  protein?: string | number;
+  fat?: string | number;
+  sodium?: string | number;
+  potassium?: string | number;
+  calcium?: string | number;
+  vitaminC?: string | number;
+  vitaminD?: string | number;
+  [key: string]: any;
 }
 
 export interface VolumeOption {
@@ -166,6 +168,7 @@ export interface Product {
   variants?: ProductVariant[];
   volumeOptions?: VolumeOption[];
   attributes?: ProductAttribute[];
+  specifications?: ProductAttribute[];
 
   // Food & Grocery Specifications
   isVeg?: boolean;
@@ -209,7 +212,7 @@ export interface CartItem {
   selectedVariant?: ProductVariant;
 }
 
-export type OrderStage = 
+export type OrderStage =
   | 'Placed'
   | 'Confirmed'
   | 'Preparing'
