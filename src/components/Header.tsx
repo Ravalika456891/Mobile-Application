@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   TextInput,
   Platform,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { Icon } from './Icon';
 import { useApp } from '../context/AppContext';
+import { getSearchSuggestionsDB } from '../services/database';
 
 export const Header: React.FC = () => {
   const {
@@ -27,6 +29,19 @@ export const Header: React.FC = () => {
   } = useApp();
 
   const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (searchQuery.trim().length >= 2) {
+      getSearchSuggestionsDB(searchQuery, 6).then((res) => {
+        setSuggestions(res);
+      }).catch(() => {
+        setSuggestions([]);
+      });
+    } else {
+      setSuggestions([]);
+    }
+  }, [searchQuery]);
 
   const savedAddresses = [
     { id: '1', title: 'Home', address: 'Flat 402, Green Valley Apts, Silicon Boulevard' },
@@ -127,7 +142,7 @@ export const Header: React.FC = () => {
           <Icon name="search" size={18} color="#6B7280" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search groceries, fruits, vegetables..."
+            placeholder="Search groceries, milk, tea, coffee, chicken..."
             placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -144,6 +159,29 @@ export const Header: React.FC = () => {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Live Search Suggestions */}
+        {suggestions.length > 0 && searchQuery.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.suggestionsScroll}
+          >
+            {suggestions.map((s, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={styles.suggestionPill}
+                onPress={() => setSearchQuery(s)}
+                activeOpacity={0.8}
+              >
+                <Icon name="search-outline" size={11} color="#059669" />
+                <Text style={styles.suggestionText} numberOfLines={1}>
+                  {s}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </View>
 
       {/* Delivery Location Selection Modal */}
@@ -369,11 +407,10 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
   },
   searchBar: {
-    flex: 1,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
@@ -382,6 +419,28 @@ const styles = StyleSheet.create({
     height: 44,
     borderWidth: 1.2,
     borderColor: '#E5E7EB',
+  },
+  suggestionsScroll: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingBottom: 2,
+    gap: 8,
+  },
+  suggestionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  suggestionText: {
+    fontSize: 12,
+    color: '#065F46',
+    fontWeight: '600',
   },
   searchIcon: {
     marginRight: 8,

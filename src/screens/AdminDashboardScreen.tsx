@@ -42,6 +42,7 @@ export const AdminDashboardScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [stockOnlyFilter, setStockOnlyFilter] = useState<boolean>(false);
+  const [lowStockFilter, setLowStockFilter] = useState<boolean>(false);
 
   // Category Management States
   const [addCatModalVisible, setAddCatModalVisible] = useState(false);
@@ -296,6 +297,7 @@ export const AdminDashboardScreen: React.FC = () => {
   // KPI calculations
   const totalRevenue = ordersList.reduce((sum, o) => sum + o.total, 0) + 18450;
   const outOfStockCount = products.filter((p) => !p.inStock || p.stockCount === 0).length;
+  const lowStockCount = products.filter((p) => p.stockCount <= 10 || !p.inStock).length;
   const inStockCount = products.length - outOfStockCount;
 
   const displayCategories = (categories && categories.length > 0 ? categories : []).filter(
@@ -311,7 +313,8 @@ export const AdminDashboardScreen: React.FC = () => {
     const matchCat =
       selectedCategoryFilter === 'all' || p.category === selectedCategoryFilter;
     const matchStock = stockOnlyFilter ? !p.inStock || p.stockCount === 0 : true;
-    return matchQuery && matchCat && matchStock;
+    const matchLowStock = lowStockFilter ? p.stockCount <= 10 || !p.inStock : true;
+    return matchQuery && matchCat && matchStock && matchLowStock;
   });
 
   // Filtered Orders
@@ -723,7 +726,10 @@ export const AdminDashboardScreen: React.FC = () => {
                 styles.filterPill,
                 stockOnlyFilter && { backgroundColor: '#FEE2E2', borderColor: '#EF4444' },
               ]}
-              onPress={() => setStockOnlyFilter(!stockOnlyFilter)}
+              onPress={() => {
+                setStockOnlyFilter(!stockOnlyFilter);
+                if (!stockOnlyFilter) setLowStockFilter(false);
+              }}
             >
               <Text
                 style={[
@@ -732,6 +738,26 @@ export const AdminDashboardScreen: React.FC = () => {
                 ]}
               >
                 ⚠️ Out of Stock ({outOfStockCount})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterPill,
+                lowStockFilter && { backgroundColor: '#FEF3C7', borderColor: '#F59E0B' },
+              ]}
+              onPress={() => {
+                setLowStockFilter(!lowStockFilter);
+                if (!lowStockFilter) setStockOnlyFilter(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterPillText,
+                  lowStockFilter && { color: '#B45309', fontWeight: '700' },
+                ]}
+              >
+                🔔 Low Stock &lt;10 ({lowStockCount})
               </Text>
             </TouchableOpacity>
           </ScrollView>

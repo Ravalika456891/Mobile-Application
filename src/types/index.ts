@@ -1,12 +1,25 @@
 export type CategoryId = 
   | 'all'
+  | 'fruits-vegetables'
+  | 'dairy-bread-eggs'
+  | 'atta-rice-dal-grains'
+  | 'masala-spices'
+  | 'cooking-oils-essentials'
+  | 'snacks-munchies'
+  | 'biscuits-bakery'
+  | 'beverages-drinks'
+  | 'tea-coffee-breakfast'
+  | 'instant-food'
+  | 'frozen-icecream'
+  | 'sauces-spreads'
+  | 'meat-seafood-eggs'
+  // Compatibility aliases
   | 'vegetables'
   | 'fruits'
   | 'rice-grains'
   | 'dairy'
   | 'snacks'
   | 'beverages'
-  | 'masala-spices'
   | 'cooking-essentials'
   | 'bakery'
   | 'frozen-foods'
@@ -20,8 +33,7 @@ export type CategoryId =
   | 'groceries'
   | 'icecreams'
   | 'clothing'
-  | 'accessories'
-  | 'fruits-vegetables';
+  | 'accessories';
 
 export interface Category {
   id: CategoryId;
@@ -91,6 +103,16 @@ export interface Product {
   shelfLife?: string;
   expiryDate?: string;
   storageInstructions?: string;
+
+  // Phase 1: Food-specific & Grocery metadata
+  isNonVeg?: boolean;
+  storageType?: 'ambient' | 'refrigerated' | 'frozen';
+  temperature?: string;
+  freshnessBadge?: string;
+  meatCut?: string;
+  unit?: string;
+  availableQuantity?: number;
+  images?: string[];
 }
 
 export interface CartItem {

@@ -144,12 +144,18 @@ export const ProductDetailModal: React.FC = () => {
             )}
 
             {/* Dietary Badges */}
-            {(selectedProduct.isVeg || selectedProduct.isVegan || selectedProduct.isJainFriendly) && (
+            {(selectedProduct.isVeg !== undefined || selectedProduct.isNonVeg || selectedProduct.isVegan || selectedProduct.isJainFriendly) && (
               <View style={styles.dietaryRow}>
                 {selectedProduct.isVeg && (
                   <View style={styles.dietBadgeVeg}>
                     <View style={styles.greenDietDot} />
                     <Text style={styles.dietBadgeVegText}>Vegetarian</Text>
+                  </View>
+                )}
+                {(selectedProduct.isNonVeg || selectedProduct.isVeg === false) && (
+                  <View style={styles.dietBadgeNonVeg}>
+                    <View style={styles.redDietDot} />
+                    <Text style={styles.dietBadgeNonVegText}>Non-Vegetarian</Text>
                   </View>
                 )}
                 {selectedProduct.isVegan && (
@@ -163,6 +169,32 @@ export const ProductDetailModal: React.FC = () => {
                     <Icon name="shield-checkmark" size={11} color="#D97706" />
                     <Text style={styles.dietBadgeJainText}>Jain-Friendly</Text>
                   </View>
+                )}
+              </View>
+            )}
+
+            {/* Freshness Badge Banner */}
+            {selectedProduct.freshnessBadge && (
+              <View style={styles.freshnessBadgeBox}>
+                <Icon name="sparkles" size={13} color="#059669" />
+                <Text style={styles.freshnessBadgeText}>
+                  {selectedProduct.freshnessBadge}
+                </Text>
+              </View>
+            )}
+
+            {/* Meat Cut & Preparation Details */}
+            {selectedProduct.meatCut && (
+              <View style={styles.meatCutCard}>
+                <View style={styles.meatCutHeader}>
+                  <Icon name="restaurant-outline" size={15} color="#991B1B" />
+                  <Text style={styles.meatCutTitle}>Cut & Preparation Details</Text>
+                </View>
+                <Text style={styles.meatCutText}>{selectedProduct.meatCut}</Text>
+                {selectedProduct.temperature && (
+                  <Text style={styles.meatTempText}>
+                    Storage Temperature: {selectedProduct.temperature}
+                  </Text>
                 )}
               </View>
             )}
@@ -676,6 +708,77 @@ const styles = StyleSheet.create({
     color: '#065F46',
     fontSize: 11,
     fontWeight: '700',
+  },
+  dietBadgeNonVeg: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  redDietDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#991B1B',
+  },
+  dietBadgeNonVegText: {
+    color: '#991B1B',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  freshnessBadgeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  freshnessBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#065F46',
+    flex: 1,
+  },
+  meatCutCard: {
+    backgroundColor: '#FFF1F2',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#FFE4E6',
+  },
+  meatCutHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  meatCutTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#991B1B',
+  },
+  meatCutText: {
+    fontSize: 12,
+    color: '#4B5563',
+    fontWeight: '500',
+  },
+  meatTempText: {
+    fontSize: 11,
+    color: '#0284C7',
+    fontWeight: '600',
+    marginTop: 3,
   },
   dietBadgeVegan: {
     flexDirection: 'row',

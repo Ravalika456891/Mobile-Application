@@ -21,6 +21,8 @@ import {
   addProductDB,
   updateProductDB,
   deleteProductDB,
+  addToRecentlyViewedDB,
+  getRecentlyViewedDB,
 } from '../services/database';
 
 interface AppContextType {
@@ -33,6 +35,7 @@ interface AppContextType {
   cartSubtotal: number;
   cartTotal: number;
   wishlist: string[];
+  recentlyViewed: Product[];
   activeOrder: Order | null;
   selectedAddress: string;
   appliedCoupon: Coupon | null;
@@ -279,6 +282,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>('all');
   const [activeTab, setActiveTab] = useState<'home' | 'categories' | 'cart' | 'tracking' | 'profile'>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>(['tcb-1', 'inst-1', 'ss-1', 'mse-1']);
+
+  const recentlyViewed = React.useMemo(() => {
+    return recentlyViewedIds
+      .map((id) => products.find((p) => p.id === id))
+      .filter((p): p is Product => Boolean(p));
+  }, [recentlyViewedIds, products]);
+
+  const handleSetSelectedProduct = (prod: Product | null) => {
+    setSelectedProduct(prod);
+    if (prod) {
+      setRecentlyViewedIds((prev) => [prod.id, ...prev.filter((id) => id !== prod.id)].slice(0, 15));
+      addToRecentlyViewedDB(prod.id).catch(() => {});
+    }
+  };
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -568,7 +587,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSearchQuery,
         setSelectedCategory,
         setActiveTab,
-        setSelectedProduct,
+        setSelectedProduct: handleSetSelectedProduct,
+        recentlyViewed,
         showToast,
       }}
     >

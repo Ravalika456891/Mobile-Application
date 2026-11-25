@@ -100,21 +100,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <Text style={styles.subcategoryText} numberOfLines={1}>
             {product.subcategory}
           </Text>
-          {product.isVeg !== undefined && (
-            <View
-              style={[
-                styles.vegBox,
-                { borderColor: product.isVeg ? '#10B981' : '#EF4444' },
-              ]}
-            >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+            {product.storageType && product.storageType !== 'ambient' && (
               <View
                 style={[
-                  styles.vegDot,
-                  { backgroundColor: product.isVeg ? '#10B981' : '#EF4444' },
+                  styles.storagePill,
+                  product.storageType === 'frozen' ? styles.frozenPill : styles.chilledPill,
                 ]}
-              />
-            </View>
-          )}
+              >
+                <Text style={styles.storagePillText}>
+                  {product.storageType === 'frozen' ? '-18°C' : 'Chilled'}
+                </Text>
+              </View>
+            )}
+            {(product.isVeg !== undefined || product.isNonVeg) && (
+              <View
+                style={[
+                  styles.vegBox,
+                  { borderColor: product.isNonVeg || !product.isVeg ? '#991B1B' : '#10B981' },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.vegDot,
+                    { backgroundColor: product.isNonVeg || !product.isVeg ? '#991B1B' : '#10B981' },
+                  ]}
+                />
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Brand if available */}
@@ -307,6 +321,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     flex: 1,
+  },
+  storagePill: {
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  chilledPill: {
+    backgroundColor: '#E0F2FE',
+  },
+  frozenPill: {
+    backgroundColor: '#EFF6FF',
+  },
+  storagePillText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#0284C7',
   },
   vegBox: {
     width: 12,

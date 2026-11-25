@@ -11,6 +11,7 @@ import { Icon } from '../components/Icon';
 import { useApp } from '../context/AppContext';
 import { CATEGORIES } from '../data/products';
 import { CategoryId } from '../types';
+import { mapCategoryToLegacy } from '../services/database';
 
 export const ExploreScreen: React.FC = () => {
   const { products, categories, setSelectedCategory, setActiveTab } = useApp();
@@ -19,7 +20,8 @@ export const ExploreScreen: React.FC = () => {
     if (catId === 'all') {
       return { count: products.length, speed: '8-15 mins' };
     }
-    const catProds = products.filter((p) => p.category === catId);
+    const targetCats = mapCategoryToLegacy(catId);
+    const catProds = products.filter((p) => targetCats.includes(p.category));
     const minTime = Math.min(...catProds.map((p) => p.deliveryTimeMins), 10);
     return { count: catProds.length, speed: `${minTime || 10} mins` };
   };
@@ -40,7 +42,7 @@ export const ExploreScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>All 16 Departments</Text>
+        <Text style={styles.headerTitle}>All Shopping Categories</Text>
         <Text style={styles.headerSubtitle}>
           Select a category to shop fresh items, daily essentials and groceries delivered in 10 minutes
         </Text>
@@ -49,7 +51,8 @@ export const ExploreScreen: React.FC = () => {
       <View style={styles.grid}>
         {displayCategories.map((cat) => {
           const stats = getCategoryStats(cat.id);
-          const sampleProduct = products.find((p) => p.category === cat.id);
+          const targetCats = mapCategoryToLegacy(cat.id);
+          const sampleProduct = products.find((p) => targetCats.includes(p.category));
           const displayImg = cat.image || sampleProduct?.image;
 
           return (

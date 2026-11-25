@@ -76,6 +76,7 @@ const memoryStore = {
   } as LocalUser | null,
   cart: [] as { product_id: string; quantity: number }[],
   wishlist: [] as string[],
+  recentlyViewed: [] as string[],
   orders: [] as StoredOrder[],
   categories: [...CATEGORIES] as Category[],
   products: [...PRODUCTS] as Product[],
@@ -445,11 +446,48 @@ export const getSnackSubcategoriesDB = async (): Promise<string[]> => {
 };
 
 /**
+ * Maps a Phase 1 category ID to its corresponding legacy aliases and product tags
+ */
+export const mapCategoryToLegacy = (cat: string): string[] => {
+  switch (cat) {
+    case 'fruits-vegetables':
+      return ['fruits-vegetables', 'fruits', 'vegetables'];
+    case 'dairy-bread-eggs':
+      return ['dairy-bread-eggs', 'dairy'];
+    case 'atta-rice-dal-grains':
+      return ['atta-rice-dal-grains', 'rice-grains'];
+    case 'cooking-oils-essentials':
+      return ['cooking-oils-essentials', 'cooking-essentials'];
+    case 'snacks-munchies':
+      return ['snacks-munchies', 'snacks'];
+    case 'biscuits-bakery':
+      return ['biscuits-bakery', 'bakery'];
+    case 'beverages-drinks':
+      return ['beverages-drinks', 'beverages'];
+    case 'frozen-icecream':
+      return ['frozen-icecream', 'frozen-foods', 'icecreams'];
+    case 'tea-coffee-breakfast':
+      return ['tea-coffee-breakfast'];
+    case 'instant-food':
+      return ['instant-food'];
+    case 'sauces-spreads':
+      return ['sauces-spreads'];
+    case 'meat-seafood-eggs':
+      return ['meat-seafood-eggs'];
+    case 'masala-spices':
+      return ['masala-spices'];
+    default:
+      return [cat];
+  }
+};
+
+/**
  * GET products by category
  */
 export const getProductsByCategoryDB = async (category: string): Promise<Product[]> => {
   if (category === 'all') return [...memoryStore.products];
-  return memoryStore.products.filter((p) => p.category === category);
+  const targetCategories = mapCategoryToLegacy(category);
+  return memoryStore.products.filter((p) => targetCategories.includes(p.category));
 };
 
 /**
@@ -459,7 +497,10 @@ export const getProductsBySubcategoryDB = async (
   category: string,
   subcategory: string
 ): Promise<Product[]> => {
-  const prods = category === 'all' ? memoryStore.products : memoryStore.products.filter((p) => p.category === category);
+  const targetCategories = mapCategoryToLegacy(category);
+  const prods = category === 'all'
+    ? memoryStore.products
+    : memoryStore.products.filter((p) => targetCategories.includes(p.category));
   if (!subcategory || subcategory === 'All' || subcategory === 'All Snacks' || subcategory === 'All Vegetables') {
     return prods;
   }
@@ -588,4 +629,72 @@ export const toggleWishlistDB = async (
  */
 export const getWishlistDB = async (): Promise<string[]> => {
   return [...memoryStore.wishlist];
+};
+
+/**
+ * GET low stock products (inventory count < threshold)
+ */
+export const getLowStockProductsDB = async (threshold = 10): Promise<Product[]> => {
+  return memoryStore.products.filter((p) => p.stockCount <= threshold || !p.inStock);
+};
+
+/**
+ * RECENTLY VIEWED PRODUCTS
+ */
+export const addToRecentlyViewedDB = async (productId: string): Promise<void> => {
+  const existingIdx = memoryStore.recentlyViewed.indexOf(productId);
+  if (existingIdx > -1) {
+    memoryStore.recentlyViewed.splice(existingIdx, 1);
+  }
+  memoryStore.recentlyViewed.unshift(productId);
+  if (memoryStore.recentlyViewed.length > 20) {
+    memoryStore.recentlyViewed.pop();
+  }
+};
+
+export const getRecentlyViewedDB = async (): Promise<Product[]> => {
+  return memoryStore.recentlyViewed
+    .map((id) => memoryStore.products.find((p) => p.id === id))
+    .filter((p): p is Product => Boolean(p));
+};
+
+/**
+ * GET related products based on category, subcategory and tags
+ */
+export const getRelatedProductsDB = async (
+  productId: string,
+  limit = 6
+): Promise<Product[]> => {
+  const target = memoryStore.products.find((p) => p.id === productId);
+  if (!target) return memoryStore.products.slice(0, limit);
+
+  return memoryStore.products
+    .filter(
+      (p) =>
+        p.id !== productId &&
+        (p.category === target.category ||
+          p.subcategory === target.subcategory ||
+          p.tags?.some((t) => target.tags?.includes(t)))
+    )
+    .slice(0, limit);
+};
+
+/**
+ * GET search query suggestions with autocomplete keywords
+ */
+export const getSearchSuggestionsDB = async (
+  query: string,
+  limit = 5
+): Promise<string[]> => {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
+  const suggestions = new Set<string>();
+  for (const product of memoryStore.products) {
+    if (product.name.toLowerCase().includes(q)) suggestions.add(product.name);
+    if (product.brand && product.brand.toLowerCase().includes(q)) suggestions.add(product.brand);
+    if (product.subcategory.toLowerCase().includes(q)) suggestions.add(product.subcategory);
+    if (suggestions.size >= limit) break;
+  }
+  return Array.from(suggestions).slice(0, limit);
 };

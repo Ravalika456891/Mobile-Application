@@ -18,6 +18,7 @@ import {
   VEGETABLE_SUBCATEGORIES,
   VegetableSubcategory,
   CATEGORIES,
+  PHASE1_CATEGORIES,
   getCategorySubcategories,
 } from '../data/products';
 import {
@@ -29,6 +30,7 @@ import {
   SNACK_SORT_OPTIONS,
 } from '../data/snacks';
 import { Product } from '../types';
+import { mapCategoryToLegacy } from '../services/database';
 
 type VegSortOption = 'popular' | 'price-asc' | 'price-desc' | 'rating';
 
@@ -41,6 +43,7 @@ export const HomeScreen: React.FC = () => {
     setSearchQuery,
     setSelectedCategory,
     setActiveTab,
+    recentlyViewed,
   } = useApp();
 
   const [filterVegOnly, setFilterVegOnly] = useState(false);
@@ -113,8 +116,9 @@ export const HomeScreen: React.FC = () => {
     [products]
   );
 
-  // General Category Products Filtered & Sorted (for any of the 16 categories)
+  // General Category Products Filtered & Sorted (for any of the 13 Phase 1 & marketplace categories)
   const categoryProducts = useMemo(() => {
+    const targetCats = mapCategoryToLegacy(selectedCategory);
     let list = products.filter((p) => {
       if (selectedCategory === 'fruits') {
         return (
@@ -124,7 +128,7 @@ export const HomeScreen: React.FC = () => {
               p.tags?.some((t) => t.toLowerCase().includes('fruit'))))
         );
       }
-      return p.category === selectedCategory;
+      return targetCats.includes(p.category);
     });
 
     // Subcategory filter
@@ -428,8 +432,9 @@ export const HomeScreen: React.FC = () => {
           (p.category === 'fruits-vegetables' &&
             !p.subcategory.toLowerCase().includes('fruit'));
         if (!isVeggie) return false;
-      } else if (selectedCategory !== 'all' && p.category !== selectedCategory) {
-        return false;
+      } else if (selectedCategory !== 'all') {
+        const targetCats = mapCategoryToLegacy(selectedCategory);
+        if (!targetCats.includes(p.category)) return false;
       }
 
       if (filterVegOnly && !p.isVeg) {
@@ -455,6 +460,32 @@ export const HomeScreen: React.FC = () => {
     switch (selectedCategory) {
       case 'all':
         return 'Popular Groceries';
+      case 'fruits-vegetables':
+        return 'Fruits & Fresh Vegetables';
+      case 'dairy-bread-eggs':
+        return 'Dairy, Bread & Farm Eggs';
+      case 'atta-rice-dal-grains':
+        return 'Atta, Rice, Dal & Grains';
+      case 'masala-spices':
+        return 'Masala, Spices & Seasonings';
+      case 'cooking-oils-essentials':
+        return 'Cooking Oils, Desi Ghee & Essentials';
+      case 'snacks-munchies':
+        return 'Snacks & Munchies';
+      case 'biscuits-bakery':
+        return 'Biscuits, Cookies & Bakery';
+      case 'beverages-drinks':
+        return 'Beverages & Soft Drinks';
+      case 'tea-coffee-breakfast':
+        return 'Tea, Coffee & Breakfast';
+      case 'instant-food':
+        return 'Instant & Ready-to-Eat Food';
+      case 'frozen-icecream':
+        return 'Frozen Foods & Ice Cream';
+      case 'sauces-spreads':
+        return 'Sauces, Spreads & Condiments';
+      case 'meat-seafood-eggs':
+        return 'Meat, Seafood & Farm Eggs';
       case 'fruits':
         return 'Fresh Farm Fruits';
       case 'vegetables':
@@ -757,18 +788,18 @@ export const HomeScreen: React.FC = () => {
             {(selectedVegSubcategory !== 'All Vegetables' ||
               vegSearchQuery.length > 0 ||
               vegSortBy !== 'popular') && (
-              <TouchableOpacity
-                style={styles.clearSearchBtn}
-                onPress={() => {
-                  setSelectedVegSubcategory('All Vegetables');
-                  setVegSearchQuery('');
-                  setVegSortBy('popular');
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.clearSearchText}>Reset</Text>
-              </TouchableOpacity>
-            )}
+                <TouchableOpacity
+                  style={styles.clearSearchBtn}
+                  onPress={() => {
+                    setSelectedVegSubcategory('All Vegetables');
+                    setVegSearchQuery('');
+                    setVegSortBy('popular');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.clearSearchText}>Reset</Text>
+                </TouchableOpacity>
+              )}
           </View>
 
           {/* Product Grid or Empty State */}
@@ -1164,23 +1195,23 @@ export const HomeScreen: React.FC = () => {
               snackFlavourFilter !== 'All Flavours' ||
               snackDietaryFilter !== 'All' ||
               snackSortBy !== 'Popularity') && (
-              <TouchableOpacity
-                style={styles.snackResetPill}
-                onPress={() => {
-                  setSelectedSnackSubcategory('All Snacks');
-                  setSnackSearchQuery('');
-                  setSnackBrandFilter('All Brands');
-                  setSnackPriceFilter('All Prices');
-                  setSnackFlavourFilter('All Flavours');
-                  setSnackDietaryFilter('All');
-                  setSnackSortBy('Popularity');
-                }}
-                activeOpacity={0.7}
-              >
-                <Icon name="refresh-outline" size={13} color="#DB2777" />
-                <Text style={styles.snackResetPillText}>Reset Filters</Text>
-              </TouchableOpacity>
-            )}
+                <TouchableOpacity
+                  style={styles.snackResetPill}
+                  onPress={() => {
+                    setSelectedSnackSubcategory('All Snacks');
+                    setSnackSearchQuery('');
+                    setSnackBrandFilter('All Brands');
+                    setSnackPriceFilter('All Prices');
+                    setSnackFlavourFilter('All Flavours');
+                    setSnackDietaryFilter('All');
+                    setSnackSortBy('Popularity');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="refresh-outline" size={13} color="#DB2777" />
+                  <Text style={styles.snackResetPillText}>Reset Filters</Text>
+                </TouchableOpacity>
+              )}
           </View>
 
           {/* Product Grid or Empty State */}
@@ -1400,21 +1431,21 @@ export const HomeScreen: React.FC = () => {
               categorySortBy !== 'Popularity' ||
               filterFastDelivery ||
               filterVegOnly) && (
-              <TouchableOpacity
-                style={styles.snackResetPill}
-                onPress={() => {
-                  setSelectedSubcategory('All');
-                  setCategorySearchQuery('');
-                  setCategorySortBy('Popularity');
-                  setFilterFastDelivery(false);
-                  setFilterVegOnly(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Icon name="refresh-outline" size={13} color="#059669" />
-                <Text style={[styles.snackResetPillText, { color: '#059669' }]}>Reset Filters</Text>
-              </TouchableOpacity>
-            )}
+                <TouchableOpacity
+                  style={styles.snackResetPill}
+                  onPress={() => {
+                    setSelectedSubcategory('All');
+                    setCategorySearchQuery('');
+                    setCategorySortBy('Popularity');
+                    setFilterFastDelivery(false);
+                    setFilterVegOnly(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="refresh-outline" size={13} color="#059669" />
+                  <Text style={[styles.snackResetPillText, { color: '#059669' }]}>Reset Filters</Text>
+                </TouchableOpacity>
+              )}
           </View>
 
           {/* Product Grid or Empty State */}
@@ -1465,11 +1496,11 @@ export const HomeScreen: React.FC = () => {
                     <Icon name="grid-outline" size={16} color="#059669" />
                     <Text style={styles.sectionHeading}>Shop By Category</Text>
                     <View style={styles.countBadgePill}>
-                      <Text style={styles.countBadgePillText}>16 Departments</Text>
+                      <Text style={styles.countBadgePillText}>13 Core Categories</Text>
                     </View>
                   </View>
                   <Text style={styles.sectionSubheading}>
-                    Explore our complete grocery, pantry & household departments
+                    Explore our complete grocery, food & fresh daily essentials
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -1510,6 +1541,40 @@ export const HomeScreen: React.FC = () => {
                   </TouchableOpacity>
                 ))}
               </View>
+            </View>
+          )}
+
+          {/* Recently Viewed Carousel */}
+          {!isSearching && selectedCategory === 'all' && recentlyViewed && recentlyViewed.length > 0 && (
+            <View style={styles.horizontalSection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionTitleCol}>
+                  <View style={styles.titleBadgeRow}>
+                    <Icon name="time-outline" size={16} color="#059669" />
+                    <Text style={styles.sectionHeading}>Recently Viewed</Text>
+                    <View style={[styles.countBadgePill, { backgroundColor: '#ECFDF5' }]}>
+                      <Text style={[styles.countBadgePillText, { color: '#059669' }]}>HISTORY</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.sectionSubheading}>
+                    Pick up right where you left off
+                  </Text>
+                </View>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalListContent}
+              >
+                {recentlyViewed.map((product) => (
+                  <ProductCard
+                    key={`rv-${product.id}`}
+                    product={product}
+                    customWidth={175}
+                  />
+                ))}
+              </ScrollView>
             </View>
           )}
 
@@ -1598,19 +1663,19 @@ export const HomeScreen: React.FC = () => {
             {(selectedCategory !== 'all' ||
               filterVegOnly ||
               filterFastDelivery) && (
-              <TouchableOpacity
-                style={styles.clearFilterChip}
-                onPress={() => {
-                  setSelectedCategory('all');
-                  setFilterVegOnly(false);
-                  setFilterFastDelivery(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.clearFilterText}>Reset Filters</Text>
-                <Icon name="close-circle" size={13} color="#6B7280" />
-              </TouchableOpacity>
-            )}
+                <TouchableOpacity
+                  style={styles.clearFilterChip}
+                  onPress={() => {
+                    setSelectedCategory('all');
+                    setFilterVegOnly(false);
+                    setFilterFastDelivery(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.clearFilterText}>Reset Filters</Text>
+                  <Icon name="close-circle" size={13} color="#6B7280" />
+                </TouchableOpacity>
+              )}
           </View>
 
           {/* Section 1: Recommended Products Horizontal Section */}

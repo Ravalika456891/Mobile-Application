@@ -1,6 +1,7 @@
 import { Category, Product, Coupon } from '../types';
 import {
   CATEGORIES,
+  PHASE1_CATEGORIES,
   MARKETPLACE_CATEGORIES,
   getCategoryById,
   getCategorySubcategories,
@@ -22,9 +23,11 @@ import {
   SNACK_SORT_OPTIONS,
 } from './snacks';
 import { MARKETPLACE_ADDITIONAL_PRODUCTS } from './marketplaceProducts';
+import { PHASE1_FOOD_PRODUCTS } from './phase1Products';
 
 export {
   CATEGORIES,
+  PHASE1_CATEGORIES,
   MARKETPLACE_CATEGORIES,
   getCategoryById,
   getCategorySubcategories,
@@ -37,6 +40,7 @@ export {
   SNACK_DIETARY_PREFERENCES,
   SNACK_SORT_OPTIONS,
   MARKETPLACE_ADDITIONAL_PRODUCTS,
+  PHASE1_FOOD_PRODUCTS,
 };
 
 export const AVAILABLE_COUPONS: Coupon[] = [
@@ -2825,6 +2829,9 @@ export const PRODUCTS: Product[] = [
 
   // ----------------- COMPLETE MARKETPLACE CATEGORIES (10 NEW CATEGORIES) -----------------
   ...MARKETPLACE_ADDITIONAL_PRODUCTS,
+
+  // ----------------- PHASE 1: CORE SHOPPING FOOD & GROCERY PRODUCTS -----------------
+  ...PHASE1_FOOD_PRODUCTS,
 ];
 
 export * from './FruitProduct';
