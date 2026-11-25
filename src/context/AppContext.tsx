@@ -154,14 +154,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
 
-  // Sync products from Cloud Firestore (falls back to local catalog automatically)
+  // Sync products and categories from Cloud Firestore (falls back to local catalog automatically)
   useEffect(() => {
     let isMounted = true;
     (async () => {
       try {
-        const mergedProducts = await getAllProductsWithFirestore(true);
-        if (isMounted && mergedProducts && mergedProducts.length > 0) {
-          setProducts(mergedProducts);
+        const { getAllProductsWithFirestore, fetchCategoriesFromFirestore } = await import('../services/productService');
+        const [result, fetchedCategories] = await Promise.all([
+          getAllProductsWithFirestore(true),
+          fetchCategoriesFromFirestore(),
+        ]);
+        if (isMounted && result && result.products && result.products.length > 0) {
+          setProducts(result.products);
+        }
+        if (isMounted && fetchedCategories && fetchedCategories.length > 0) {
+          setCategories(fetchedCategories);
         }
       } catch (err) {
         console.warn('[AppContext] Firestore sync notice (using local products fallback):', err);

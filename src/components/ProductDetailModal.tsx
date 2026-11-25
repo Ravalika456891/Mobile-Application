@@ -13,6 +13,7 @@ import {
 import { Icon } from './Icon';
 import { useApp } from '../context/AppContext';
 import { ProductVariant } from '../types';
+import { resolveProductImageSource, DEFAULT_FALLBACK_IMAGE } from '../utils/imageRegistry';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80';
@@ -78,28 +79,28 @@ export const ProductDetailModal: React.FC = () => {
   const displayPrice = selectedVariant
     ? selectedVariant.price
     : activeOption
-    ? activeOption.price
-    : selectedProduct.price;
+      ? activeOption.price
+      : selectedProduct.price;
 
   const displayOriginalPrice = selectedVariant
     ? selectedVariant.originalPrice || selectedProduct.originalPrice
     : activeOption
-    ? activeOption.originalPrice || selectedProduct.originalPrice
-    : selectedProduct.originalPrice;
+      ? activeOption.originalPrice || selectedProduct.originalPrice
+      : selectedProduct.originalPrice;
 
   const displayWeightOrSize = selectedVariant
     ? selectedVariant.name || selectedVariant.size || selectedVariant.shade || selectedVariant.color || 'Option'
     : activeOption
-    ? activeOption.size
-    : selectedProduct.weightOrSize;
+      ? activeOption.size
+      : selectedProduct.weightOrSize;
 
   const currentProductToAdd = activeOption
     ? {
-        ...selectedProduct,
-        price: displayPrice,
-        originalPrice: displayOriginalPrice,
-        weightOrSize: displayWeightOrSize,
-      }
+      ...selectedProduct,
+      price: displayPrice,
+      originalPrice: displayOriginalPrice,
+      weightOrSize: displayWeightOrSize,
+    }
     : selectedProduct;
 
   const quantity = getItemQuantity(selectedProduct.id);
@@ -146,9 +147,7 @@ export const ProductDetailModal: React.FC = () => {
             {/* Product Image */}
             <View style={styles.imageBox}>
               <Image
-                source={{
-                  uri: imgError ? FALLBACK_IMAGE : selectedProduct.image,
-                }}
+                source={imgError ? { uri: DEFAULT_FALLBACK_IMAGE } : resolveProductImageSource(selectedProduct.image)}
                 style={styles.mainImage}
                 resizeMode="cover"
                 onError={() => setImgError(true)}
@@ -256,7 +255,7 @@ export const ProductDetailModal: React.FC = () => {
                 style={[
                   styles.sugarBanner,
                   selectedProduct.sugarLabel === 'Sugar-Free' ||
-                  selectedProduct.sugarLabel === 'Zero Added Sugar'
+                    selectedProduct.sugarLabel === 'Zero Added Sugar'
                     ? styles.sugarBannerGreen
                     : styles.sugarBannerBlue,
                 ]}
@@ -266,7 +265,7 @@ export const ProductDetailModal: React.FC = () => {
                   size={18}
                   color={
                     selectedProduct.sugarLabel === 'Sugar-Free' ||
-                    selectedProduct.sugarLabel === 'Zero Added Sugar'
+                      selectedProduct.sugarLabel === 'Zero Added Sugar'
                       ? '#059669'
                       : '#2563EB'
                   }
@@ -278,7 +277,7 @@ export const ProductDetailModal: React.FC = () => {
                       {
                         color:
                           selectedProduct.sugarLabel === 'Sugar-Free' ||
-                          selectedProduct.sugarLabel === 'Zero Added Sugar'
+                            selectedProduct.sugarLabel === 'Zero Added Sugar'
                             ? '#065F46'
                             : '#1E40AF',
                       },
@@ -290,10 +289,10 @@ export const ProductDetailModal: React.FC = () => {
                     {selectedProduct.sugarLabel === 'Sugar-Free'
                       ? 'Zero grams of sugar • 100% diabetic and keto friendly'
                       : selectedProduct.sugarLabel === 'Zero Added Sugar'
-                      ? 'No refined sugars added • Sweetened only by real fruit arils'
-                      : selectedProduct.sugarLabel === 'Low-Sugar'
-                      ? 'Reduced sugar formulation • Balanced calorie intake'
-                      : 'Authentic classic recipe with certified quality'}
+                        ? 'No refined sugars added • Sweetened only by real fruit arils'
+                        : selectedProduct.sugarLabel === 'Low-Sugar'
+                          ? 'Reduced sugar formulation • Balanced calorie intake'
+                          : 'Authentic classic recipe with certified quality'}
                   </Text>
                 </View>
               </View>
@@ -451,57 +450,57 @@ export const ProductDetailModal: React.FC = () => {
               selectedProduct.material ||
               selectedProduct.gender ||
               selectedProduct.storageCapacity) && (
-              <View style={styles.lifestyleCard}>
-                <View style={styles.lifestyleHeader}>
-                  <Icon name="ribbon-outline" size={16} color="#059669" />
-                  <Text style={styles.lifestyleTitle}>Product Highlights & Specifications</Text>
+                <View style={styles.lifestyleCard}>
+                  <View style={styles.lifestyleHeader}>
+                    <Icon name="ribbon-outline" size={16} color="#059669" />
+                    <Text style={styles.lifestyleTitle}>Product Highlights & Specifications</Text>
+                  </View>
+                  <View style={styles.highlightPillsWrap}>
+                    {selectedProduct.brand && (
+                      <View style={styles.highlightPill}>
+                        <Text style={styles.highlightPillLabel}>Brand:</Text>
+                        <Text style={styles.highlightPillVal}>{selectedProduct.brand}</Text>
+                      </View>
+                    )}
+                    {selectedProduct.warranty && (
+                      <View style={[styles.highlightPill, styles.highlightPillGreen]}>
+                        <Icon name="shield-checkmark" size={11} color="#059669" />
+                        <Text style={styles.highlightPillVal}>{selectedProduct.warranty} Warranty</Text>
+                      </View>
+                    )}
+                    {selectedProduct.skinType && (
+                      <View style={styles.highlightPill}>
+                        <Text style={styles.highlightPillLabel}>Skin Type:</Text>
+                        <Text style={styles.highlightPillVal}>{selectedProduct.skinType}</Text>
+                      </View>
+                    )}
+                    {selectedProduct.ageGroup && (
+                      <View style={styles.highlightPill}>
+                        <Text style={styles.highlightPillLabel}>Age Group:</Text>
+                        <Text style={styles.highlightPillVal}>{selectedProduct.ageGroup}</Text>
+                      </View>
+                    )}
+                    {selectedProduct.material && (
+                      <View style={styles.highlightPill}>
+                        <Text style={styles.highlightPillLabel}>Material:</Text>
+                        <Text style={styles.highlightPillVal}>{selectedProduct.material}</Text>
+                      </View>
+                    )}
+                    {selectedProduct.author && (
+                      <View style={styles.highlightPill}>
+                        <Text style={styles.highlightPillLabel}>Author:</Text>
+                        <Text style={styles.highlightPillVal}>{selectedProduct.author}</Text>
+                      </View>
+                    )}
+                    {selectedProduct.storageCapacity && (
+                      <View style={styles.highlightPill}>
+                        <Text style={styles.highlightPillLabel}>Capacity:</Text>
+                        <Text style={styles.highlightPillVal}>{selectedProduct.storageCapacity}</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-                <View style={styles.highlightPillsWrap}>
-                  {selectedProduct.brand && (
-                    <View style={styles.highlightPill}>
-                      <Text style={styles.highlightPillLabel}>Brand:</Text>
-                      <Text style={styles.highlightPillVal}>{selectedProduct.brand}</Text>
-                    </View>
-                  )}
-                  {selectedProduct.warranty && (
-                    <View style={[styles.highlightPill, styles.highlightPillGreen]}>
-                      <Icon name="shield-checkmark" size={11} color="#059669" />
-                      <Text style={styles.highlightPillVal}>{selectedProduct.warranty} Warranty</Text>
-                    </View>
-                  )}
-                  {selectedProduct.skinType && (
-                    <View style={styles.highlightPill}>
-                      <Text style={styles.highlightPillLabel}>Skin Type:</Text>
-                      <Text style={styles.highlightPillVal}>{selectedProduct.skinType}</Text>
-                    </View>
-                  )}
-                  {selectedProduct.ageGroup && (
-                    <View style={styles.highlightPill}>
-                      <Text style={styles.highlightPillLabel}>Age Group:</Text>
-                      <Text style={styles.highlightPillVal}>{selectedProduct.ageGroup}</Text>
-                    </View>
-                  )}
-                  {selectedProduct.material && (
-                    <View style={styles.highlightPill}>
-                      <Text style={styles.highlightPillLabel}>Material:</Text>
-                      <Text style={styles.highlightPillVal}>{selectedProduct.material}</Text>
-                    </View>
-                  )}
-                  {selectedProduct.author && (
-                    <View style={styles.highlightPill}>
-                      <Text style={styles.highlightPillLabel}>Author:</Text>
-                      <Text style={styles.highlightPillVal}>{selectedProduct.author}</Text>
-                    </View>
-                  )}
-                  {selectedProduct.storageCapacity && (
-                    <View style={styles.highlightPill}>
-                      <Text style={styles.highlightPillLabel}>Capacity:</Text>
-                      <Text style={styles.highlightPillVal}>{selectedProduct.storageCapacity}</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            )}
+              )}
 
             {/* Delivery Location & Pincode Checker */}
             <View style={styles.pincodeBox}>

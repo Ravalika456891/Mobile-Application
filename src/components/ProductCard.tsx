@@ -10,6 +10,7 @@ import {
 import { Icon } from './Icon';
 import { Product } from '../types';
 import { useApp } from '../context/AppContext';
+import { resolveProductImageSource, DEFAULT_FALLBACK_IMAGE } from '../utils/imageRegistry';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80';
@@ -55,7 +56,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Top Image Container */}
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: imgError ? FALLBACK_IMAGE : product.image }}
+          source={imgError ? { uri: DEFAULT_FALLBACK_IMAGE } : resolveProductImageSource(product.image)}
           style={styles.image}
           resizeMode="cover"
           onError={() => setImgError(true)}
